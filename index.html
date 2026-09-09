@@ -7,9 +7,9 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA (mouse look re‑enabled) -->
+    <!-- CAMERA RIG (mouse look enabled) -->
     <a-entity id="player" position="0 1.6 0">
-      <a-camera id="camera" look-controls="enabled: true"></a-camera>
+      <a-camera look-controls="enabled: true"></a-camera>
     </a-entity>
 
     <!-- FLOOR -->
@@ -26,7 +26,7 @@
     <a-plane position="-6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
     <a-plane position="6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
-    <!-- BACK WALL (door) -->
+    <!-- BACK WALL (door here) -->
     <a-plane position="0 2 10" rotation="0 180 0" width="20" height="4" color="#222"></a-plane>
     <a-plane position="0 1 10" rotation="0 180 0" width="2" height="3" color="#654321"></a-plane>
 
@@ -36,7 +36,7 @@
     <!-- RIGHT WALL -->
     <a-plane position="10 2 0" rotation="0 -90 0" width="20" height="4" color="#222"></a-plane>
 
-    <!-- SIDE WINDOWS -->
+    <!-- EXTRA WINDOWS -->
     <a-plane position="-10 2 -4" rotation="0 90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
     <a-plane position="10 2 4" rotation="0 -90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
@@ -51,23 +51,31 @@
     let isJumping = false;
 
     document.addEventListener('keydown', (e) => {
+
+      // LEFT / RIGHT → rotate player (mouse look still works)
       if (e.key === "ArrowLeft") yRotation += 5;
       if (e.key === "ArrowRight") yRotation -= 5;
+
+      // Q / E → move up/down
       if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
       if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
 
+      // SPACE → jump
       if (e.code === "Space" && !isJumping) {
         isJumping = true;
         let startY = player.object3D.position.y;
         player.object3D.position.y = startY + 1;
+
         setTimeout(() => {
           player.object3D.position.y = startY;
           isJumping = false;
         }, 400);
       }
 
+      // Apply rotation to the whole player
       player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
     });
   </script>
 
 </body>
+</html>
