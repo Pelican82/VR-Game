@@ -41,17 +41,17 @@
 
   <script>
     const player = document.querySelector('#player');
-    let xRotation = 0;
+    let yRotation = 0;
     let isJumping = false;
 
     document.addEventListener('keydown', (e) => {
 
-      // LEFT / RIGHT → rotate camera on X axis
+      // LEFT / RIGHT → rotate camera left/right (Y axis)
       if (e.key === "ArrowLeft") {
-        xRotation += 5;
+        yRotation += 5;
       }
       if (e.key === "ArrowRight") {
-        xRotation -= 5;
+        yRotation -= 5;
       }
 
       // Q / E → move camera up and down
@@ -78,8 +78,8 @@
         }, 400);
       }
 
-      // Apply rotation (X axis only)
-      player.object3D.rotation.x = THREE.Math.degToRad(xRotation);
+      // Apply rotation (Y axis = look left/right)
+      player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
     });
   </script>
 
