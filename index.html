@@ -18,20 +18,8 @@
       rotation="-90 0 0"
       width="20"
       height="20"
-      color="#8B4513"> <!-- brown -->
+      color="#8B4513">
     </a-plane>
-
-    <!-- OPTIONAL: Carpet texture -->
-    <!-- Uncomment this if you want carpet instead of brown -->
-    <!--
-    <a-plane
-      position="0 0 0"
-      rotation="-90 0 0"
-      width="20"
-      height="20"
-      src="https://cdn.aframe.io/a-painter/images/floor.jpg">
-    </a-plane>
-    -->
 
     <!-- SKY -->
     <a-sky color="#CCEEFF"></a-sky>
@@ -39,66 +27,27 @@
     <!-- SUN -->
     <a-sphere position="-5 10 -10" radius="2" color="yellow"></a-sphere>
 
-    <!-- WALLS (brick texture) -->
-    <a-plane
-      position="0 2 -10"
-      rotation="0 0 0"
-      width="20"
-      height="4"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-plane>
+    <!-- FRONT WALL (with windows) -->
+    <a-plane position="0 2 -10" rotation="0 0 0" width="20" height="4" color="#222"></a-plane>
+    <a-plane position="-6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
+    <a-plane position="6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
-    <a-plane
-      position="0 2 10"
-      rotation="0 180 0"
-      width="20"
-      height="4"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-plane>
+    <!-- BACK WALL (door moved here) -->
+    <a-plane position="0 2 10" rotation="0 180 0" width="20" height="4" color="#222"></a-plane>
+    <a-plane position="0 1 10" rotation="0 180 0" width="2" height="3" color="#654321"></a-plane>
 
-    <a-plane
-      position="-10 2 0"
-      rotation="0 90 0"
-      width="20"
-      height="4"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-plane>
+    <!-- LEFT WALL -->
+    <a-plane position="-10 2 0" rotation="0 90 0" width="20" height="4" color="#222"></a-plane>
 
-    <a-plane
-      position="10 2 0"
-      rotation="0 -90 0"
-      width="20"
-      height="4"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-plane>
+    <!-- RIGHT WALL -->
+    <a-plane position="10 2 0" rotation="0 -90 0" width="20" height="4" color="#222"></a-plane>
 
-    <!-- DOOR -->
-    <a-plane
-      position="0 1 -10"
-      rotation="0 0 0"
-      width="2"
-      height="3"
-      color="#654321">
-    </a-plane>
+    <!-- EXTRA WINDOWS ON SIDE WALLS -->
+    <a-plane position="-10 2 -4" rotation="0 90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
+    <a-plane position="10 2 4" rotation="0 -90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
-    <!-- WINDOWS -->
-    <a-plane
-      position="-6 2 -10"
-      rotation="0 0 0"
-      width="3"
-      height="2"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-plane>
-
-    <a-plane
-      position="6 2 -10"
-      rotation="0 0 0"
-      width="3"
-      height="2"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-plane>
+    <!-- ROOF -->
+    <a-box position="0 4 0" width="20" height="0.2" depth="20" color="#444"></a-box>
 
   </a-scene>
 
@@ -108,38 +57,21 @@
     let isJumping = false;
 
     document.addEventListener('keydown', (e) => {
+      if (e.key === "ArrowLeft") yRotation += 5;
+      if (e.key === "ArrowRight") yRotation -= 5;
+      if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
+      if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
 
-      // LEFT / RIGHT → rotate camera left/right (Y axis)
-      if (e.key === "ArrowLeft") {
-        yRotation += 5;
-      }
-      if (e.key === "ArrowRight") {
-        yRotation -= 5;
-      }
-
-      // Q / E → move camera up and down
-      if (e.key === "q" || e.key === "Q") {
-        player.object3D.position.y += 0.2;
-      }
-      if (e.key === "e" || e.key === "E") {
-        player.object3D.position.y -= 0.2;
-      }
-
-      // SPACEBAR → jump
       if (e.code === "Space" && !isJumping) {
         isJumping = true;
-
         let startY = player.object3D.position.y;
-
         player.object3D.position.y = startY + 1;
-
         setTimeout(() => {
           player.object3D.position.y = startY;
           isJumping = false;
         }, 400);
       }
 
-      // Apply rotation
       player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
     });
   </script>
