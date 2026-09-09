@@ -7,19 +7,13 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA -->
+    <!-- CAMERA (mouse look re‑enabled) -->
     <a-entity id="player" position="0 1.6 0">
-      <a-camera id="camera" look-controls="enabled: false"></a-camera>
+      <a-camera id="camera" look-controls="enabled: true"></a-camera>
     </a-entity>
 
-    <!-- FLOOR (brown or carpet) -->
-    <a-plane
-      position="0 0 0"
-      rotation="-90 0 0"
-      width="20"
-      height="20"
-      color="#8B4513">
-    </a-plane>
+    <!-- FLOOR -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#8B4513"></a-plane>
 
     <!-- SKY -->
     <a-sky color="#CCEEFF"></a-sky>
@@ -27,12 +21,12 @@
     <!-- SUN -->
     <a-sphere position="-5 10 -10" radius="2" color="yellow"></a-sphere>
 
-    <!-- FRONT WALL (with windows) -->
+    <!-- FRONT WALL (windows) -->
     <a-plane position="0 2 -10" rotation="0 0 0" width="20" height="4" color="#222"></a-plane>
     <a-plane position="-6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
     <a-plane position="6 2 -10" rotation="0 0 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
-    <!-- BACK WALL (door moved here) -->
+    <!-- BACK WALL (door) -->
     <a-plane position="0 2 10" rotation="0 180 0" width="20" height="4" color="#222"></a-plane>
     <a-plane position="0 1 10" rotation="0 180 0" width="2" height="3" color="#654321"></a-plane>
 
@@ -42,7 +36,7 @@
     <!-- RIGHT WALL -->
     <a-plane position="10 2 0" rotation="0 -90 0" width="20" height="4" color="#222"></a-plane>
 
-    <!-- EXTRA WINDOWS ON SIDE WALLS -->
+    <!-- SIDE WINDOWS -->
     <a-plane position="-10 2 -4" rotation="0 90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
     <a-plane position="10 2 4" rotation="0 -90 0" width="3" height="2" color="#88CCFF" opacity="0.6"></a-plane>
 
