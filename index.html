@@ -41,25 +41,25 @@
 
   <script>
     const player = document.querySelector('#player');
-    let yRotation = 0;
     let xRotation = 0;
     let isJumping = false;
 
     document.addEventListener('keydown', (e) => {
-      // LEFT / RIGHT → rotate camera on Y axis
-      if (e.key === "ArrowLeft") {
-        yRotation += 5;
-      }
-      if (e.key === "ArrowRight") {
-        yRotation -= 5;
-      }
 
-      // UP / DOWN → rotate camera on X axis
-      if (e.key === "ArrowUp") {
+      // LEFT / RIGHT → rotate camera on X axis
+      if (e.key === "ArrowLeft") {
         xRotation += 5;
       }
-      if (e.key === "ArrowDown") {
+      if (e.key === "ArrowRight") {
         xRotation -= 5;
+      }
+
+      // Q / E → move camera up and down
+      if (e.key === "q" || e.key === "Q") {
+        player.object3D.position.y += 0.2;
+      }
+      if (e.key === "e" || e.key === "E") {
+        player.object3D.position.y -= 0.2;
       }
 
       // SPACEBAR → jump
@@ -78,8 +78,7 @@
         }, 400);
       }
 
-      // Apply rotation
-      player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
+      // Apply rotation (X axis only)
       player.object3D.rotation.x = THREE.Math.degToRad(xRotation);
     });
   </script>
