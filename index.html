@@ -7,35 +7,98 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA WITH CUSTOM CONTROLS (mouse look disabled) -->
+    <!-- CAMERA -->
     <a-entity id="player" position="0 1.6 0">
       <a-camera id="camera" look-controls="enabled: false"></a-camera>
     </a-entity>
 
-    <!-- RED BOX -->
-    <a-box position="-1 1 -3" color="red"></a-box>
-
-    <!-- BLUE SPHERE -->
-    <a-sphere position="1 1 -4" color="blue"></a-sphere>
-
-    <!-- GREEN GROUND -->
+    <!-- FLOOR (brown or carpet) -->
     <a-plane
-      position="0 0 -4"
+      position="0 0 0"
       rotation="-90 0 0"
       width="20"
       height="20"
-      color="#55AA55">
+      color="#8B4513"> <!-- brown -->
     </a-plane>
+
+    <!-- OPTIONAL: Carpet texture -->
+    <!-- Uncomment this if you want carpet instead of brown -->
+    <!--
+    <a-plane
+      position="0 0 0"
+      rotation="-90 0 0"
+      width="20"
+      height="20"
+      src="https://cdn.aframe.io/a-painter/images/floor.jpg">
+    </a-plane>
+    -->
 
     <!-- SKY -->
     <a-sky color="#CCEEFF"></a-sky>
 
     <!-- SUN -->
-    <a-sphere 
-      position="-5 10 -10" 
-      radius="2" 
-      color="yellow">
-    </a-sphere>
+    <a-sphere position="-5 10 -10" radius="2" color="yellow"></a-sphere>
+
+    <!-- WALLS (brick texture) -->
+    <a-plane
+      position="0 2 -10"
+      rotation="0 0 0"
+      width="20"
+      height="4"
+      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
+    </a-plane>
+
+    <a-plane
+      position="0 2 10"
+      rotation="0 180 0"
+      width="20"
+      height="4"
+      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
+    </a-plane>
+
+    <a-plane
+      position="-10 2 0"
+      rotation="0 90 0"
+      width="20"
+      height="4"
+      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
+    </a-plane>
+
+    <a-plane
+      position="10 2 0"
+      rotation="0 -90 0"
+      width="20"
+      height="4"
+      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
+    </a-plane>
+
+    <!-- DOOR -->
+    <a-plane
+      position="0 1 -10"
+      rotation="0 0 0"
+      width="2"
+      height="3"
+      color="#654321">
+    </a-plane>
+
+    <!-- WINDOWS -->
+    <a-plane
+      position="-6 2 -10"
+      rotation="0 0 0"
+      width="3"
+      height="2"
+      color="#88CCFF"
+      opacity="0.6">
+    </a-plane>
+
+    <a-plane
+      position="6 2 -10"
+      rotation="0 0 0"
+      width="3"
+      height="2"
+      color="#88CCFF"
+      opacity="0.6">
+    </a-plane>
 
   </a-scene>
 
@@ -68,17 +131,15 @@
 
         let startY = player.object3D.position.y;
 
-        // Jump up
         player.object3D.position.y = startY + 1;
 
-        // Fall back down after 400ms
         setTimeout(() => {
           player.object3D.position.y = startY;
           isJumping = false;
         }, 400);
       }
 
-      // Apply rotation (Y axis = look left/right)
+      // Apply rotation
       player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
     });
   </script>
