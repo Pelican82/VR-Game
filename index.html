@@ -26,34 +26,34 @@
       position="0 3 -10"
       width="20"
       height="6"
-      depth="0.5"
+      depth="1"
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
     </a-box>
 
-    <!-- WOOD PLANK DOOR (front wall) -->
+    <!-- WOOD PLANK DOOR -->
     <a-box
-      position="0 1.5 -9.75"
+      position="0 1.5 -9.4"
       width="2"
       height="3"
-      depth="0.2"
+      depth="0.3"
       src="https://cdn.aframe.io/a-painter/images/floor.jpg">
     </a-box>
 
-    <!-- WINDOWS (front wall) -->
+    <!-- FRONT WINDOWS -->
     <a-box
-      position="-6 3 -9.75"
+      position="-6 3 -9.4"
       width="3"
       height="2"
-      depth="0.1"
+      depth="0.2"
       color="#88CCFF"
       opacity="0.6">
     </a-box>
 
     <a-box
-      position="6 3 -9.75"
+      position="6 3 -9.4"
       width="3"
       height="2"
-      depth="0.1"
+      depth="0.2"
       color="#88CCFF"
       opacity="0.6">
     </a-box>
@@ -63,14 +63,14 @@
       position="0 3 10"
       width="20"
       height="6"
-      depth="0.5"
+      depth="1"
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
     </a-box>
 
     <!-- LEFT WALL -->
     <a-box 
       position="-10 3 0"
-      width="0.5"
+      width="1"
       height="6"
       depth="20"
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
@@ -79,7 +79,7 @@
     <!-- RIGHT WALL -->
     <a-box 
       position="10 3 0"
-      width="0.5"
+      width="1"
       height="6"
       depth="20"
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
@@ -88,7 +88,7 @@
     <!-- SIDE WINDOWS -->
     <a-box
       position="-10 3 -4"
-      width="0.2"
+      width="0.5"
       height="2"
       depth="3"
       color="#88CCFF"
@@ -97,7 +97,7 @@
 
     <a-box
       position="10 3 4"
-      width="0.2"
+      width="0.5"
       height="2"
       depth="3"
       color="#88CCFF"
@@ -144,6 +144,16 @@
 
       // Apply rotation
       player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
+
+      // Prevent clipping into walls
+      const x = player.object3D.position.x;
+      const z = player.object3D.position.z;
+
+      // Boundaries of the room
+      if (x > 9.5) player.object3D.position.x = 9.5;
+      if (x < -9.5) player.object3D.position.x = -9.5;
+      if (z > 9.5) player.object3D.position.z = 9.5;
+      if (z < -9.5) player.object3D.position.z = -9.5;
     });
   </script>
 
