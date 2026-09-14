@@ -21,7 +21,7 @@
     <!-- SUN -->
     <a-sphere position="-5 10 -10" radius="2" color="yellow"></a-sphere>
 
-    <!-- FRONT WALL (brick, 3D) -->
+    <!-- FRONT WALL (3D brick) -->
     <a-box 
       position="0 3 -10"
       width="20"
@@ -30,7 +30,7 @@
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
     </a-box>
 
-    <!-- WOOD PLANK DOOR -->
+    <!-- WOOD PLANK DOOR (front wall) -->
     <a-box
       position="0 1.5 -9.4"
       width="2"
@@ -58,7 +58,7 @@
       opacity="0.6">
     </a-box>
 
-    <!-- BACK WALL -->
+    <!-- BACK WALL (3D brick) -->
     <a-box 
       position="0 3 10"
       width="20"
@@ -67,7 +67,7 @@
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
     </a-box>
 
-    <!-- LEFT WALL -->
+    <!-- LEFT WALL (3D brick) -->
     <a-box 
       position="-10 3 0"
       width="1"
@@ -76,7 +76,7 @@
       src="https://cdn.aframe.io/a-painter/images/brick.jpg">
     </a-box>
 
-    <!-- RIGHT WALL -->
+    <!-- RIGHT WALL (3D brick) -->
     <a-box 
       position="10 3 0"
       width="1"
@@ -149,7 +149,6 @@
       const x = player.object3D.position.x;
       const z = player.object3D.position.z;
 
-      // Boundaries of the room
       if (x > 9.5) player.object3D.position.x = 9.5;
       if (x < -9.5) player.object3D.position.x = -9.5;
       if (z > 9.5) player.object3D.position.z = 9.5;
