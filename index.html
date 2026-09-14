@@ -7,9 +7,9 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA (wasd-controls disabled so arrow keys ONLY rotate, never move) -->
-    <a-entity id="player" position="0 1.6 -5">
-      <a-camera look-controls="enabled: true" wasd-controls="enabled: false"></a-camera>
+    <!-- CAMERA (wasd-controls disabled so we fully control movement ourselves) -->
+    <a-entity id="player" position="0 1.6 0">
+      <a-camera id="cam" look-controls="enabled: true" wasd-controls="enabled: false" fov="80"></a-camera>
     </a-entity>
 
     <!-- FLOOR -->
@@ -17,8 +17,6 @@
 
     <!-- SKY -->
     <a-sky color="#CCEEFF"></a-sky>
-
-    <!-- ============ EXTERIOR WALLS ============ -->
 
     <!-- FRONT WALL (split around the entrance doorway at x -0.75 to 0.75) -->
     <a-box position="-5.375 3 -10" width="9.25" height="6" depth="1"
@@ -52,61 +50,21 @@
     <a-box position="6 3.5 -9.55" width="1.8" height="1.8" depth="0.1" color="#88CCFF" opacity="0.5" side="double"></a-box>
     <a-box position="6 3.5 -9.6" width="2" height="2" depth="0.05" color="#5C3A21"></a-box>
 
-    <!-- ============ INTERIOR WALLS (light grey, split into a 2x2 room grid with doorway gaps) ============ -->
-    <!-- Wall A runs along X at Z=0, splitting front rooms from back rooms -->
-    <a-box position="-7.7 3 0" width="3.6" height="6" depth="0.3" color="#D3D3D3"></a-box>
-    <a-box position="-2.125 3 0" width="3.95" height="6" depth="0.3" color="#D3D3D3"></a-box>
-    <a-box position="2.125 3 0" width="3.95" height="6" depth="0.3" color="#D3D3D3"></a-box>
-    <a-box position="7.7 3 0" width="3.6" height="6" depth="0.3" color="#D3D3D3"></a-box>
-
-    <!-- Wall B runs along Z at X=0, splitting left rooms from right rooms -->
-    <a-box position="0 3 -7.7" width="0.3" height="6" depth="3.6" color="#D3D3D3"></a-box>
-    <a-box position="0 3 -2.125" width="0.3" height="6" depth="3.95" color="#D3D3D3"></a-box>
-    <a-box position="0 3 2.125" width="0.3" height="6" depth="3.95" color="#D3D3D3"></a-box>
-    <a-box position="0 3 7.7" width="0.3" height="6" depth="3.6" color="#D3D3D3"></a-box>
-
-    <!-- ============ ROOM LABELS ============ -->
-    <a-text value="KITCHEN" position="-5 4.5 -5" align="center" color="#222" width="6"></a-text>
-    <a-text value="BATHROOM" position="5 4.5 -5" align="center" color="#222" width="6"></a-text>
-    <a-text value="BEDROOM" position="-5 4.5 5" align="center" color="#222" width="6"></a-text>
-    <a-text value="LIVING ROOM" position="5 4.5 5" align="center" color="#222" width="6"></a-text>
-
-    <!-- ============ KITCHEN (front-left) ============ -->
-    <a-box position="-7 0.5 -8" width="3" height="1" depth="0.6" color="#A9A9A9"></a-box>
-    <a-box position="-7 0.4 -6" width="1" height="0.8" depth="0.8" color="#333333"></a-box>
-    <a-box position="-4 1 -8.5" width="1" height="2" depth="1" color="#EEEEEE"></a-box>
-
-    <!-- ============ BATHROOM (front-right) ============ -->
-    <a-cylinder position="3 0.3 -8" radius="0.25" height="0.6" color="#FFFFFF"></a-cylinder>
-    <a-box position="3 0.7 -8.4" width="0.5" height="0.5" depth="0.3" color="#FFFFFF"></a-box>
-    <a-box position="7 0.9 -8" width="1" height="0.2" depth="0.6" color="#FFFFFF"></a-box>
-
-    <!-- ============ BEDROOM (back-left) ============ -->
-    <a-box position="-6 0.3 7" width="2" height="0.5" depth="3.2" color="#8B5A2B"></a-box>
-    <a-box position="-6 0.65 7" width="1.8" height="0.3" depth="3" color="#FAFAFA"></a-box>
-    <a-box position="-6 0.85 5.7" width="1.4" height="0.2" depth="0.6" color="#FFFFFF"></a-box>
-
-    <!-- ============ LIVING ROOM (back-right) ============ -->
-    <a-box position="6 0.4 3" width="3" height="0.8" depth="1.2" color="#2F4F4F"></a-box>
-    <a-box position="6 2 8.7" width="2" height="1.2" depth="0.1" color="#000000"></a-box>
-    <a-box position="6 0.3 5" width="1.2" height="0.4" depth="0.6" color="#8B5A2B"></a-box>
-
   </a-scene>
 
   <script>
-    const scene = document.querySelector('a-scene');
     const player = document.querySelector('#player');
+    const camEl = document.querySelector('#cam');
 
     function degToRad(deg) {
       return deg * Math.PI / 180;
     }
 
-    let yaw = 0;    // left/right pan
-    let pitch = 0;  // up/down tilt
+    let pitch = 0;      // up/down tilt (keyboard)
+    let fov = 80;        // zoom level (keyboard)
     let isJumping = false;
     const keys = {};
 
-    // Keys that should never trigger the browser's default behavior (page scroll, etc.)
     const blockedKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Spacebar"];
 
     document.addEventListener('keydown', (e) => {
@@ -114,15 +72,19 @@
 
       keys[e.key.toLowerCase()] = true;
 
-      // LEFT/RIGHT ARROWS = PAN (rotate view left/right on the Y axis)
-      if (e.key === "ArrowLeft") yaw += 5;
-      if (e.key === "ArrowRight") yaw -= 5;
-
       // UP/DOWN ARROWS = TILT (rotate view up/down on the X axis)
       if (e.key === "ArrowUp") pitch += 5;
       if (e.key === "ArrowDown") pitch -= 5;
       if (pitch > 89) pitch = 89;
       if (pitch < -89) pitch = -89;
+      player.object3D.rotation.x = degToRad(pitch);
+
+      // LEFT/RIGHT ARROWS = ZOOM (narrow/widen field of view)
+      if (e.key === "ArrowLeft") fov -= 5;   // zoom in
+      if (e.key === "ArrowRight") fov += 5;  // zoom out
+      if (fov < 20) fov = 20;
+      if (fov > 120) fov = 120;
+      camEl.setAttribute('camera', 'fov', fov);
 
       if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
       if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
@@ -136,82 +98,72 @@
           isJumping = false;
         }, 400);
       }
-
-      player.object3D.rotation.y = degToRad(yaw);
-      player.object3D.rotation.x = degToRad(pitch);
     });
 
     document.addEventListener('keyup', (e) => {
       keys[e.key.toLowerCase()] = false;
     });
 
-    // ---- SOLID WALLS: every wall segment as an axis-aligned box for collision ----
+    // ---- SOLID EXTERIOR WALLS (circle vs. axis-aligned box collision) ----
     const wallBoxes = [
-      // Exterior
-      { xMin: -10.5, xMax: -0.75, zMin: -10.5, zMax: -9.5 }, // front-left (of doorway)
-      { xMin: 0.75, xMax: 10.5, zMin: -10.5, zMax: -9.5 },   // front-right (of doorway)
+      { xMin: -10.5, xMax: -0.75, zMin: -10.5, zMax: -9.5 }, // front-left of doorway
+      { xMin: 0.75, xMax: 10.5, zMin: -10.5, zMax: -9.5 },   // front-right of doorway
       { xMin: -10, xMax: 10, zMin: 9.5, zMax: 10.5 },        // back
       { xMin: -10.5, xMax: -9.5, zMin: -10, zMax: 10 },      // left
       { xMin: 9.5, xMax: 10.5, zMin: -10, zMax: 10 },        // right
-
-      // Interior Wall A (along X, at Z=0) with two doorway gaps
-      { xMin: -9.5, xMax: -5.9, zMin: -0.15, zMax: 0.15 },
-      { xMin: -4.1, xMax: -0.15, zMin: -0.15, zMax: 0.15 },
-      { xMin: 0.15, xMax: 4.1, zMin: -0.15, zMax: 0.15 },
-      { xMin: 5.9, xMax: 9.5, zMin: -0.15, zMax: 0.15 },
-
-      // Interior Wall B (along Z, at X=0) with two doorway gaps
-      { xMin: -0.15, xMax: 0.15, zMin: -9.5, zMax: -5.9 },
-      { xMin: -0.15, xMax: 0.15, zMin: -4.1, zMax: -0.15 },
-      { xMin: -0.15, xMax: 0.15, zMin: 0.15, zMax: 4.1 },
-      { xMin: -0.15, xMax: 0.15, zMin: 5.9, zMax: 9.5 },
     ];
 
     const PLAYER_RADIUS = 0.35;
     const SPEED = 3; // meters per second
 
-    scene.addEventListener('loaded', function () {
-      scene.addEventListener('tick', function (time, deltaTimeMS) {
-        const dt = deltaTimeMS / 1000;
-        const rad = degToRad(yaw);
-        const forward = { x: -Math.sin(rad), z: -Math.cos(rad) };
-        const right = { x: Math.cos(rad), z: -Math.sin(rad) };
+    let lastTime = performance.now();
 
-        let moveX = 0, moveZ = 0;
-        if (keys['w']) { moveX += forward.x; moveZ += forward.z; }
-        if (keys['s']) { moveX -= forward.x; moveZ -= forward.z; }
-        if (keys['a']) { moveX -= right.x; moveZ -= right.z; }
-        if (keys['d']) { moveX += right.x; moveZ += right.z; }
+    function gameLoop(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
 
-        const len = Math.hypot(moveX, moveZ);
-        if (len > 0) {
-          moveX = (moveX / len) * SPEED * dt;
-          moveZ = (moveZ / len) * SPEED * dt;
+      // Move relative to where the camera is actually looking (mouse-look included)
+      const yaw = camEl.object3D.rotation.y;
+      const forward = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+      const right = { x: Math.cos(yaw), z: -Math.sin(yaw) };
+
+      let moveX = 0, moveZ = 0;
+      if (keys['w']) { moveX += forward.x; moveZ += forward.z; }
+      if (keys['s']) { moveX -= forward.x; moveZ -= forward.z; }
+      if (keys['a']) { moveX -= right.x; moveZ -= right.z; }
+      if (keys['d']) { moveX += right.x; moveZ += right.z; }
+
+      const len = Math.hypot(moveX, moveZ);
+      if (len > 0) {
+        moveX = (moveX / len) * SPEED * dt;
+        moveZ = (moveZ / len) * SPEED * dt;
+      }
+
+      let newX = player.object3D.position.x + moveX;
+      let newZ = player.object3D.position.z + moveZ;
+
+      for (const w of wallBoxes) {
+        const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
+        const closestZ = Math.max(w.zMin, Math.min(newZ, w.zMax));
+        const dx = newX - closestX;
+        const dz = newZ - closestZ;
+        const distSq = dx * dx + dz * dz;
+
+        if (distSq < PLAYER_RADIUS * PLAYER_RADIUS) {
+          const dist = Math.sqrt(distSq) || 0.0001;
+          const overlap = PLAYER_RADIUS - dist;
+          newX += (dx / dist) * overlap;
+          newZ += (dz / dist) * overlap;
         }
+      }
 
-        let newX = player.object3D.position.x + moveX;
-        let newZ = player.object3D.position.z + moveZ;
+      player.object3D.position.x = newX;
+      player.object3D.position.z = newZ;
 
-        // Resolve collision against every wall (circle vs. axis-aligned box)
-        for (const w of wallBoxes) {
-          const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
-          const closestZ = Math.max(w.zMin, Math.min(newZ, w.zMax));
-          const dx = newX - closestX;
-          const dz = newZ - closestZ;
-          const distSq = dx * dx + dz * dz;
+      requestAnimationFrame(gameLoop);
+    }
 
-          if (distSq < PLAYER_RADIUS * PLAYER_RADIUS) {
-            const dist = Math.sqrt(distSq) || 0.0001;
-            const overlap = PLAYER_RADIUS - dist;
-            newX += (dx / dist) * overlap;
-            newZ += (dz / dist) * overlap;
-          }
-        }
-
-        player.object3D.position.x = newX;
-        player.object3D.position.z = newZ;
-      });
-    });
+    requestAnimationFrame(gameLoop);
   </script>
 
 </body>
