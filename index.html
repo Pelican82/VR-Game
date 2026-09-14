@@ -20,11 +20,14 @@
 
     <!-- FRONT WALL (3D brick) -->
     <a-box position="0 3 -10" width="20" height="6" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 8 3"></a-box>
+           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
 
     <!-- WOOD DOOR -->
-    <a-box position="0 1.5 -9.4" width="2" height="3" depth="0.3"
+    <a-box position="0 1.3 -9.35" width="1.5" height="2.6" depth="0.2"
            material="src: https://threejs.org/examples/textures/hardwood2_diffuse.jpg; repeat: 1 2"></a-box>
+
+    <!-- DOOR KNOB -->
+    <a-sphere position="0.55 1.3 -9.2" radius="0.06" color="#D4AF37" metalness="0.8" roughness="0.2"></a-sphere>
 
     <!-- FRONT WINDOWS -->
     <a-box position="-6 3 -9.4" width="3" height="2" depth="0.2"
@@ -34,15 +37,15 @@
 
     <!-- BACK WALL -->
     <a-box position="0 3 10" width="20" height="6" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 8 3"></a-box>
+           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
 
     <!-- LEFT WALL -->
     <a-box position="-10 3 0" width="1" height="6" depth="20"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 8 3"></a-box>
+           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
 
     <!-- RIGHT WALL -->
     <a-box position="10 3 0" width="1" height="6" depth="20"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 8 3"></a-box>
+           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
 
     <!-- ROOF -->
     <a-box position="0 6.1 0" width="20" height="0.5" depth="20" color="#444"></a-box>
@@ -77,10 +80,13 @@
       const x = player.object3D.position.x;
       const z = player.object3D.position.z;
 
-      if (x > 9.5) player.object3D.position.x = 9.5;
-      if (x < -9.5) player.object3D.position.x = -9.5;
-      if (z > 9.5) player.object3D.position.z = 9.5;
-      if (z < -9.5) player.object3D.position.z = -9.5;
+      // Keep player from clipping into the side walls (walls sit at x = ±10)
+      if (x > 9.3) player.object3D.position.x = 9.3;
+      if (x < -9.3) player.object3D.position.x = -9.3;
+
+      // Keep player from clipping into the front door (door front face is at z = -9.25)
+      if (z > 9.3) player.object3D.position.z = 9.3;
+      if (z < -9.1) player.object3D.position.z = -9.1;
     });
   </script>
 
