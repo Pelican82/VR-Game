@@ -7,7 +7,7 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA (mouse look enabled) -->
+    <!-- CAMERA -->
     <a-entity id="player" position="0 1.6 0">
       <a-camera look-controls="enabled: true"></a-camera>
     </a-entity>
@@ -18,100 +18,34 @@
     <!-- SKY -->
     <a-sky color="#CCEEFF"></a-sky>
 
-    <!-- SUN -->
-    <a-sphere position="-5 10 -10" radius="2" color="yellow"></a-sphere>
-
     <!-- FRONT WALL (3D brick) -->
-    <a-box 
-      position="0 3 -10"
-      width="20"
-      height="6"
-      depth="1"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-box>
+    <a-box position="0 3 -10" width="20" height="6" depth="1"
+           src="https://cdn.aframe.io/a-painter/images/brick.jpg"></a-box>
 
-    <!-- WOOD PLANK DOOR (front wall) -->
-    <a-box
-      position="0 1.5 -9.4"
-      width="2"
-      height="3"
-      depth="0.3"
-      src="https://cdn.aframe.io/a-painter/images/floor.jpg">
-    </a-box>
+    <!-- WOOD DOOR -->
+    <a-box position="0 1.5 -9.4" width="2" height="3" depth="0.3"
+           src="https://cdn.aframe.io/a-painter/images/floor.jpg"></a-box>
 
     <!-- FRONT WINDOWS -->
-    <a-box
-      position="-6 3 -9.4"
-      width="3"
-      height="2"
-      depth="0.2"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-box>
+    <a-box position="-6 3 -9.4" width="3" height="2" depth="0.2"
+           color="#88CCFF" opacity="0.6"></a-box>
+    <a-box position="6 3 -9.4" width="3" height="2" depth="0.2"
+           color="#88CCFF" opacity="0.6"></a-box>
 
-    <a-box
-      position="6 3 -9.4"
-      width="3"
-      height="2"
-      depth="0.2"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-box>
+    <!-- BACK WALL -->
+    <a-box position="0 3 10" width="20" height="6" depth="1"
+           src="https://cdn.aframe.io/a-painter/images/brick.jpg"></a-box>
 
-    <!-- BACK WALL (3D brick) -->
-    <a-box 
-      position="0 3 10"
-      width="20"
-      height="6"
-      depth="1"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-box>
+    <!-- LEFT WALL -->
+    <a-box position="-10 3 0" width="1" height="6" depth="20"
+           src="https://cdn.aframe.io/a-painter/images/brick.jpg"></a-box>
 
-    <!-- LEFT WALL (3D brick) -->
-    <a-box 
-      position="-10 3 0"
-      width="1"
-      height="6"
-      depth="20"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-box>
-
-    <!-- RIGHT WALL (3D brick) -->
-    <a-box 
-      position="10 3 0"
-      width="1"
-      height="6"
-      depth="20"
-      src="https://cdn.aframe.io/a-painter/images/brick.jpg">
-    </a-box>
-
-    <!-- SIDE WINDOWS -->
-    <a-box
-      position="-10 3 -4"
-      width="0.5"
-      height="2"
-      depth="3"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-box>
-
-    <a-box
-      position="10 3 4"
-      width="0.5"
-      height="2"
-      depth="3"
-      color="#88CCFF"
-      opacity="0.6">
-    </a-box>
+    <!-- RIGHT WALL -->
+    <a-box position="10 3 0" width="1" height="6" depth="20"
+           src="https://cdn.aframe.io/a-painter/images/brick.jpg"></a-box>
 
     <!-- ROOF -->
-    <a-box 
-      position="0 6.1 0"
-      width="20"
-      height="0.5"
-      depth="20"
-      color="#444">
-    </a-box>
+    <a-box position="0 6.1 0" width="20" height="0.5" depth="20" color="#444"></a-box>
 
   </a-scene>
 
@@ -122,30 +56,24 @@
 
     document.addEventListener('keydown', (e) => {
 
-      // Rotate player left/right
       if (e.key === "ArrowLeft") yRotation += 5;
       if (e.key === "ArrowRight") yRotation -= 5;
 
-      // Move up/down
       if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
       if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
 
-      // Jump
       if (e.code === "Space" && !isJumping) {
         isJumping = true;
         let startY = player.object3D.position.y;
         player.object3D.position.y = startY + 1;
-
         setTimeout(() => {
           player.object3D.position.y = startY;
           isJumping = false;
         }, 400);
       }
 
-      // Apply rotation
       player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
 
-      // Prevent clipping into walls
       const x = player.object3D.position.x;
       const z = player.object3D.position.z;
 
