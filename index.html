@@ -29,11 +29,15 @@
     <!-- DOOR KNOB -->
     <a-sphere position="0.55 1.3 -9.2" radius="0.06" color="#D4AF37" metalness="0.8" roughness="0.2"></a-sphere>
 
-    <!-- FRONT WINDOWS -->
-    <a-box position="-6 3 -9.4" width="3" height="2" depth="0.2"
-           color="#88CCFF" opacity="0.6"></a-box>
-    <a-box position="6 3 -9.4" width="3" height="2" depth="0.2"
-           color="#88CCFF" opacity="0.6"></a-box>
+    <!-- FRONT WINDOWS (sit flush in the wall, not floating in front of it) -->
+    <a-box position="-6 3.5 -9.55" width="1.8" height="1.8" depth="0.1"
+           color="#88CCFF" opacity="0.5" side="double"></a-box>
+    <!-- window frame -->
+    <a-box position="-6 3.5 -9.6" width="2" height="2" depth="0.05" color="#5C3A21"></a-box>
+
+    <a-box position="6 3.5 -9.55" width="1.8" height="1.8" depth="0.1"
+           color="#88CCFF" opacity="0.5" side="double"></a-box>
+    <a-box position="6 3.5 -9.6" width="2" height="2" depth="0.05" color="#5C3A21"></a-box>
 
     <!-- BACK WALL -->
     <a-box position="0 3 10" width="20" height="6" depth="1"
@@ -54,13 +58,30 @@
 
   <script>
     const player = document.querySelector('#player');
-    let yRotation = 0;
+
+    // Plain degree-to-radian helper (THREE.Math was removed in newer three.js versions,
+    // which was silently breaking rotation before)
+    function degToRad(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    let yaw = 0;   // left/right pan
+    let pitch = 0; // up/down tilt
     let isJumping = false;
 
     document.addEventListener('keydown', (e) => {
 
-      if (e.key === "ArrowLeft") yRotation += 5;
-      if (e.key === "ArrowRight") yRotation -= 5;
+      // LEFT/RIGHT ARROWS = PAN (rotate view left/right on the Y axis)
+      if (e.key === "ArrowLeft") yaw += 5;
+      if (e.key === "ArrowRight") yaw -= 5;
+
+      // UP/DOWN ARROWS = TILT (rotate view up/down on the X axis)
+      if (e.key === "ArrowUp") pitch += 5;
+      if (e.key === "ArrowDown") pitch -= 5;
+
+      // Clamp tilt so you can't flip the camera upside down
+      if (pitch > 89) pitch = 89;
+      if (pitch < -89) pitch = -89;
 
       if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
       if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
@@ -75,7 +96,8 @@
         }, 400);
       }
 
-      player.object3D.rotation.y = THREE.Math.degToRad(yRotation);
+      player.object3D.rotation.y = degToRad(yaw);
+      player.object3D.rotation.x = degToRad(pitch);
 
       const x = player.object3D.position.x;
       const z = player.object3D.position.z;
