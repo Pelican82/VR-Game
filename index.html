@@ -82,6 +82,12 @@
 
     const PLAYER_RADIUS = 0.35;
 
+    // Floor sits at y=0, roof's underside sits at y=5.85 (roof box is 0.5 tall,
+    // centered at y=6.1). Keep the camera's eye position between the two,
+    // with a little headroom so you don't clip into either.
+    const FLOOR_Y = 0.15;
+    const ROOF_Y = 5.7;
+
     function collisionLoop() {
       const pos = player.object3D.position;
       let newX = pos.x;
@@ -104,6 +110,10 @@
 
       pos.x = newX;
       pos.z = newZ;
+
+      // Floor and roof collision (blocks Q/E flying through either)
+      if (pos.y < FLOOR_Y) pos.y = FLOOR_Y;
+      if (pos.y > ROOF_Y) pos.y = ROOF_Y;
 
       requestAnimationFrame(collisionLoop);
     }
