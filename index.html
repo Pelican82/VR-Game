@@ -10,7 +10,7 @@
     <!-- CAMERA RIG: default A-Frame movement. wasd-controls on the OUTER entity moves you
          around (WASD + arrow keys by default), look-controls on the INNER camera handles
          mouse-look. This is A-Frame's standard rig pattern. -->
-    <a-entity id="player" position="0 1.6 0" wasd-controls>
+    <a-entity id="player" position="0 1.6 0" wasd-controls="acceleration: 20">
       <a-camera id="cam" look-controls></a-camera>
     </a-entity>
 
@@ -81,6 +81,7 @@
     ];
 
     const PLAYER_RADIUS = 0.35;
+    const MAX_STEP = 0.2; // max distance the player can move in a single frame
 
     // Floor sits at y=0, roof's underside sits at y=5.85 (roof box is 0.5 tall,
     // centered at y=6.1). Keep the camera's eye position between the two,
@@ -88,10 +89,27 @@
     const FLOOR_Y = 0.15;
     const ROOF_Y = 5.7;
 
+    // Track the last known-good position so we can cap how far we move
+    // in one frame — this stops fast movement from "jumping over" a wall
+    // before the collision check ever sees it.
+    let prevX = player.object3D.position.x;
+    let prevZ = player.object3D.position.z;
+
     function collisionLoop() {
       const pos = player.object3D.position;
-      let newX = pos.x;
-      let newZ = pos.z;
+
+      // Cap the distance moved this frame so we can never tunnel through a wall
+      let deltaX = pos.x - prevX;
+      let deltaZ = pos.z - prevZ;
+      const stepDist = Math.hypot(deltaX, deltaZ);
+      if (stepDist > MAX_STEP) {
+        const scale = MAX_STEP / stepDist;
+        deltaX *= scale;
+        deltaZ *= scale;
+      }
+
+      let newX = prevX + deltaX;
+      let newZ = prevZ + deltaZ;
 
       for (const w of wallBoxes) {
         const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
@@ -110,6 +128,8 @@
 
       pos.x = newX;
       pos.z = newZ;
+      prevX = newX;
+      prevZ = newZ;
 
       // Floor and roof collision (blocks Q/E flying through either)
       if (pos.y < FLOOR_Y) pos.y = FLOOR_Y;
