@@ -7,9 +7,11 @@
 <body>
   <a-scene>
 
-    <!-- CAMERA (wasd-controls disabled so we fully control movement ourselves) -->
-    <a-entity id="player" position="0 1.6 0">
-      <a-camera id="cam" look-controls="enabled: true" wasd-controls="enabled: false" fov="80"></a-camera>
+    <!-- CAMERA RIG: default A-Frame movement. wasd-controls on the OUTER entity moves you
+         around (WASD + arrow keys by default), look-controls on the INNER camera handles
+         mouse-look. This is A-Frame's standard rig pattern. -->
+    <a-entity id="player" position="0 1.6 0" wasd-controls>
+      <a-camera id="cam" look-controls></a-camera>
     </a-entity>
 
     <!-- FLOOR -->
@@ -39,14 +41,15 @@
     <!-- ROOF -->
     <a-box position="0 6.1 0" width="20" height="0.5" depth="20" color="#444"></a-box>
 
-    <!-- BRICK HEADER (fills the gap above the door, up to the roof) -->
-    <a-box position="0 4.3 -10" width="1.6" height="3.4" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 1 1"></a-box>
+    <!-- BRICK HEADER (fills the gap above the door, up to the roof, with generous overlap
+         onto the side wall pieces so there's no sliver of sky visible) -->
+    <a-box position="0 4.3 -10" width="1.9" height="3.4" depth="1.02"
+           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 1 2"></a-box>
 
-    <!-- ENTRANCE DOOR (flush with the wall's outer face, fully covering the gap) -->
-    <a-box position="0 1.3 -9.575" width="1.6" height="2.6" depth="0.15"
+    <!-- ENTRANCE DOOR (flush with the wall's outer face at z=-9.5, fully covering the gap) -->
+    <a-box position="0 1.3 -9.575" width="1.9" height="2.6" depth="0.15"
            material="src: https://threejs.org/examples/textures/hardwood2_diffuse.jpg; repeat: 1 2"></a-box>
-    <a-sphere position="0.6 1.3 -9.48" radius="0.06" color="#D4AF37" metalness="0.8" roughness="0.2"></a-sphere>
+    <a-sphere position="0.7 1.3 -9.48" radius="0.06" color="#D4AF37" metalness="0.8" roughness="0.2"></a-sphere>
 
     <!-- FRONT WINDOWS -->
     <a-box position="-6 3.5 -9.55" width="1.8" height="1.8" depth="0.1" color="#88CCFF" opacity="0.5" side="double"></a-box>
@@ -58,57 +61,17 @@
 
   <script>
     const player = document.querySelector('#player');
-    const camEl = document.querySelector('#cam');
 
-    function degToRad(deg) {
-      return deg * Math.PI / 180;
-    }
-
-    let pitch = 0;      // up/down tilt (keyboard)
-    let fov = 80;        // zoom level (keyboard)
-    let isJumping = false;
-    const keys = {};
-
-    const blockedKeys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " ", "Spacebar"];
-
+    // Only custom keyboard behavior kept: Q/E move the player up/down.
     document.addEventListener('keydown', (e) => {
-      if (blockedKeys.includes(e.key) || e.code === "Space") e.preventDefault();
-
-      keys[e.key.toLowerCase()] = true;
-
-      // UP/DOWN ARROWS = TILT (rotate view up/down on the X axis)
-      if (e.key === "ArrowUp") pitch += 5;
-      if (e.key === "ArrowDown") pitch -= 5;
-      if (pitch > 89) pitch = 89;
-      if (pitch < -89) pitch = -89;
-      player.object3D.rotation.x = degToRad(pitch);
-
-      // LEFT/RIGHT ARROWS = ZOOM (narrow/widen field of view)
-      if (e.key === "ArrowLeft") fov -= 5;   // zoom in
-      if (e.key === "ArrowRight") fov += 5;  // zoom out
-      if (fov < 20) fov = 20;
-      if (fov > 120) fov = 120;
-      camEl.setAttribute('camera', 'fov', fov);
-
       if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
       if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
-
-      if (e.code === "Space" && !isJumping) {
-        isJumping = true;
-        let startY = player.object3D.position.y;
-        player.object3D.position.y = startY + 1;
-        setTimeout(() => {
-          player.object3D.position.y = startY;
-          isJumping = false;
-        }, 400);
-      }
-    });
-
-    document.addEventListener('keyup', (e) => {
-      keys[e.key.toLowerCase()] = false;
     });
 
     // ---- SOLID EXTERIOR WALLS (circle vs. axis-aligned box collision) ----
+    // This runs every frame regardless of what moved the player (default
+    // wasd-controls, in this case) and simply pushes you back out if you
+    // end up inside a wall.
     const wallBoxes = [
       { xMin: -10.5, xMax: -0.75, zMin: -10.5, zMax: -9.5 }, // front-left of doorway
       { xMin: 0.75, xMax: 10.5, zMin: -10.5, zMax: -9.5 },   // front-right of doorway
@@ -118,33 +81,11 @@
     ];
 
     const PLAYER_RADIUS = 0.35;
-    const SPEED = 3; // meters per second
 
-    let lastTime = performance.now();
-
-    function gameLoop(now) {
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-
-      // Move relative to where the camera is actually looking (mouse-look included)
-      const yaw = camEl.object3D.rotation.y;
-      const forward = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
-      const right = { x: Math.cos(yaw), z: -Math.sin(yaw) };
-
-      let moveX = 0, moveZ = 0;
-      if (keys['w']) { moveX += forward.x; moveZ += forward.z; }
-      if (keys['s']) { moveX -= forward.x; moveZ -= forward.z; }
-      if (keys['a']) { moveX -= right.x; moveZ -= right.z; }
-      if (keys['d']) { moveX += right.x; moveZ += right.z; }
-
-      const len = Math.hypot(moveX, moveZ);
-      if (len > 0) {
-        moveX = (moveX / len) * SPEED * dt;
-        moveZ = (moveZ / len) * SPEED * dt;
-      }
-
-      let newX = player.object3D.position.x + moveX;
-      let newZ = player.object3D.position.z + moveZ;
+    function collisionLoop() {
+      const pos = player.object3D.position;
+      let newX = pos.x;
+      let newZ = pos.z;
 
       for (const w of wallBoxes) {
         const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
@@ -161,13 +102,13 @@
         }
       }
 
-      player.object3D.position.x = newX;
-      player.object3D.position.z = newZ;
+      pos.x = newX;
+      pos.z = newZ;
 
-      requestAnimationFrame(gameLoop);
+      requestAnimationFrame(collisionLoop);
     }
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(collisionLoop);
   </script>
 
 </body>
