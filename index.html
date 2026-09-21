@@ -1,145 +1,1048 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Bedroom of Three Chances — VR</title>
+<script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --bg-deep:      #0f1017;
+    --accent-lamp:   #e3a857;
+    --accent-lamp-soft: #f0c483;
+    --accent-danger: #b23a3a;
+    --accent-danger-bright: #e2504f;
+    --paper:        #f3e9d2;
+    --paper-2:      #ece0c4;
+    --ink:          #2a2620;
+    --ink-soft:     #56503f;
+    --text-light:   #e8e6f0;
+    --text-muted:   #9092a8;
+    --text-faint:   #5c5f76;
+    --line:         rgba(232,230,240,0.14);
+    --line-strong:  rgba(232,230,240,0.26);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; background:#000; font-family:var(--sans); overflow:hidden; }
+  a-scene{ position:fixed; inset:0; z-index:0; }
+
+  /* ============ UI OVERLAY SHELL (lets clicks pass through to the 3D scene) ============ */
+  #ui{
+    position:fixed; inset:0; z-index:10;
+    pointer-events:none;
+    display:flex;
+    flex-direction:column;
+    color:var(--text-light);
+  }
+
+  #hud{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 26px;
+    background:linear-gradient(180deg, rgba(15,16,23,0.9), rgba(15,16,23,0));
+  }
+  #hud .title{ font-family:var(--serif); font-style:italic; font-size:1.15rem; }
+  #chances{ display:flex; align-items:center; gap:10px; }
+  #chances .label{ font-size:0.7rem; color:var(--text-muted); }
+  #chances .pips{ display:flex; gap:6px; }
+  .pip{ width:11px; height:11px; border-radius:50%; background:var(--accent-lamp); box-shadow:0 0 6px rgba(227,168,87,0.6); transition:300ms; }
+  .pip.spent{ background:transparent; box-shadow:none; border:1px solid var(--text-faint); }
+
+  #crosshair{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:6px; height:6px; border-radius:50%;
+    background:rgba(255,255,255,0.55);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.4);
+    z-index:11;
+    pointer-events:none;
+  }
+  #crosshair.hover{
+    background:var(--accent-lamp);
+    box-shadow:0 0 8px rgba(227,168,87,0.9);
+    width:9px; height:9px;
+  }
+
+  #hover-label{
+    position:fixed; top:calc(50% + 18px); left:50%; transform:translateX(-50%);
+    font-family:var(--sans); font-size:0.78rem; color:var(--text-light);
+    background:rgba(15,16,23,0.88); border:1px solid var(--line-strong);
+    padding:5px 10px; border-radius:2px;
+    opacity:0; transition:opacity 120ms ease;
+    z-index:11; pointer-events:none;
+    white-space:nowrap;
+  }
+  #hover-label.visible{ opacity:1; }
+
+  #clue-log{
+    position:fixed; left:22px; top:78px; width:220px;
+    background:rgba(15,16,23,0.85); border:1px solid var(--line);
+    border-radius:3px; z-index:10;
+    max-height:52%;
+    display:flex; flex-direction:column;
+    pointer-events:auto;
+  }
+  #clue-log-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 13px; border-bottom:1px solid var(--line);
+    font-size:0.72rem; color:var(--text-muted);
+  }
+  #clue-log-toggle{ background:none; border:none; color:var(--text-muted); font-size:0.85rem; cursor:pointer; }
+  #clue-log-list{ list-style:none; margin:0; padding:9px 13px; overflow-y:auto; display:flex; flex-direction:column; gap:7px; }
+  #clue-log.collapsed #clue-log-list{ display:none; }
+  #clue-log-list li{ font-family:var(--serif); font-size:0.9rem; color:var(--paper-2); line-height:1.3; padding-left:11px; position:relative; }
+  #clue-log-list li::before{ content:"•"; position:absolute; left:0; color:var(--accent-lamp); }
+  #clue-log-empty{ font-size:0.78rem; color:var(--text-faint); font-style:italic; }
+
+  #narrator-bar{
+    margin-top:auto;
+    display:flex; align-items:center; gap:14px;
+    padding:16px 26px;
+    background:linear-gradient(0deg, rgba(15,16,23,0.92), rgba(15,16,23,0));
+  }
+  #narrator-bar .voice-mark{ width:8px; height:8px; border-radius:50%; background:var(--accent-lamp); box-shadow:0 0 10px rgba(227,168,87,0.7); flex-shrink:0; }
+  #narrator-text{ font-family:var(--serif); font-style:italic; font-size:1.05rem; }
+
+  #move-hint{
+    position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
+    font-size:0.72rem; color:var(--text-faint); letter-spacing:0.3px;
+    z-index:10; pointer-events:none;
+    background:rgba(15,16,23,0.6); padding:5px 12px; border-radius:12px;
+  }
+
+  /* ============ MODAL (identical language to the flat version, reused) ============ */
+  #modal-overlay{
+    position:fixed; inset:0; background:rgba(10,10,15,0.72); backdrop-filter:blur(3px);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100; opacity:0; pointer-events:none; transition:opacity 320ms ease; padding:24px;
+  }
+  #modal-overlay.visible{ opacity:1; pointer-events:auto; }
+  #modal-box{
+    background:#1a1d2b; border:1px solid var(--line-strong); border-radius:6px;
+    width:100%; max-width:560px; max-height:86vh; overflow-y:auto; padding:30px;
+    position:relative; box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    transform:translateY(12px) scale(0.98); transition:transform 320ms ease;
+  }
+  #modal-overlay.visible #modal-box{ transform:translateY(0) scale(1); }
+  #modal-box.wide{ max-width:720px; }
+  #modal-close{
+    position:absolute; top:15px; right:15px; width:29px; height:29px;
+    border:1px solid var(--line); background:transparent; color:var(--text-muted);
+    border-radius:50%; font-size:0.95rem; display:flex; align-items:center; justify-content:center;
+    transition:160ms; cursor:pointer;
+  }
+  #modal-close:hover{ border-color:var(--accent-lamp); color:var(--accent-lamp); }
+  .modal-eyebrow{ font-size:0.7rem; color:var(--text-faint); margin:0 0 6px; }
+  .modal-title{ font-family:var(--serif); font-size:1.6rem; font-weight:500; margin:0 0 16px; }
+  .modal-body p{ font-family:var(--serif); font-size:1.1rem; line-height:1.6; margin:0 0 12px; }
+  .modal-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+  .btn{
+    font-family:var(--sans); font-size:0.83rem; font-weight:500; padding:10px 16px;
+    border-radius:2px; border:1px solid var(--line-strong); background:transparent;
+    color:var(--text-light); transition:160ms; cursor:pointer;
+  }
+  .btn:hover{ border-color:var(--accent-lamp); color:var(--accent-lamp); }
+  .btn.primary{ background:var(--accent-lamp); border-color:var(--accent-lamp); color:var(--ink); }
+  .btn.primary:hover{ background:var(--accent-lamp-soft); }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+
+  .paper{ background:var(--paper); color:var(--ink); border-radius:2px; padding:24px 22px; box-shadow:0 8px 24px rgba(0,0,0,0.4); position:relative; }
+  .paper p{ font-family:var(--serif); font-size:1.15rem; line-height:1.65; color:var(--ink); margin:0 0 10px; }
+  .paper .symbols{ font-size:1.5rem; letter-spacing:16px; text-align:center; margin:12px 0 4px; color:var(--ink-soft); }
+  .journal-nav{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+  .journal-nav .page-count{ font-size:0.76rem; color:var(--ink-soft); font-family:var(--sans); }
+  .journal-sketch{ margin-top:10px; padding:12px; border:1px dashed var(--ink-soft); font-family:var(--sans); font-size:0.82rem; color:var(--ink-soft); text-align:center; }
+
+  .mirror-text{ font-family:var(--serif); font-size:1.25rem; text-align:center; padding:20px; border:1px solid var(--line); border-radius:4px; background:linear-gradient(160deg, rgba(200,210,230,0.06), rgba(0,0,0,0.2)); }
+  .mirror-text.flipped{ transform:scaleX(-1); }
+
+  .glass{ padding:24px; text-align:center; border:1px solid var(--line); border-radius:4px; background:linear-gradient(160deg, rgba(180,200,220,0.08), rgba(0,0,0,0.25)); font-family:var(--serif); font-size:0.95rem; color:var(--text-muted); letter-spacing:0.4px; }
+  .glass.revealed{ font-size:1.4rem; letter-spacing:2px; color:var(--accent-lamp); text-shadow:0 0 16px rgba(227,168,87,0.5); }
+
+  .combo-wrap{ display:flex; justify-content:center; gap:16px; margin:20px 0; }
+  .combo-dial{ display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .combo-dial button{ width:38px; height:32px; border:1px solid var(--line-strong); background:transparent; color:var(--text-light); border-radius:2px; font-size:0.95rem; cursor:pointer; transition:160ms; }
+  .combo-dial button:hover{ border-color:var(--accent-lamp); color:var(--accent-lamp); }
+  .combo-digit{ width:52px; text-align:center; font-family:var(--serif); font-size:1.9rem; color:var(--accent-lamp); }
+  .combo-wrap.shake{ animation:comboShake 450ms ease; }
+  @keyframes comboShake{ 0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-8px); } 75%{ transform:translateX(8px); } }
+  .tag-reveal{ margin-top:16px; padding:14px; border:1px solid var(--accent-danger); color:var(--accent-danger-bright); font-size:0.76rem; letter-spacing:1px; text-align:center; display:none; }
+  .tag-reveal.visible{ display:block; }
+
+  /* ============ ENDING ============ */
+  #ending-overlay{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    text-align:center; opacity:0; pointer-events:none; transition:opacity 1200ms ease; padding:24px;
+  }
+  #ending-overlay.visible{ opacity:1; pointer-events:auto; }
+  #ending-overlay.win{ background:radial-gradient(ellipse at 50% 40%, rgba(227,168,87,0.25), rgba(15,16,23,0.96)); }
+  #ending-overlay.lose{ background:radial-gradient(ellipse at 50% 40%, rgba(178,58,58,0.28), rgba(10,8,9,0.97)); }
+  #ending-content{ max-width:520px; }
+  #ending-content .eyebrow{ font-size:0.72rem; letter-spacing:2px; color:var(--text-muted); margin-bottom:12px; }
+  #ending-content h1{ font-family:var(--serif); font-weight:500; font-size:2.4rem; margin:0 0 18px; }
+  #ending-overlay.lose #ending-content h1{ color:var(--accent-danger-bright); }
+  #ending-content p{ font-family:var(--serif); font-style:italic; font-size:1.1rem; color:var(--text-muted); line-height:1.6; margin:0 0 26px; }
+
+  @media (max-width: 760px){
+    #hud .title{ font-size:0.9rem; }
+    #clue-log{ width:160px; }
+    .modal-title{ font-size:1.25rem; }
+    #modal-box{ padding:20px; }
+  }
+
+</style>
 </head>
-
 <body>
-  <a-scene>
 
-    <!-- CAMERA RIG: default A-Frame movement. wasd-controls on the OUTER entity moves you
-         around (WASD + arrow keys by default), look-controls on the INNER camera handles
-         mouse-look. This is A-Frame's standard rig pattern. -->
-    <a-entity id="player" position="0 1.6 0" wasd-controls="acceleration: 20">
-      <a-camera id="cam" look-controls></a-camera>
+<!-- ============ 3D SCENE ============ -->
+<a-scene vr-mode-ui="enabled: false" background="color:#05050a">
+
+  <a-assets></a-assets>
+
+  <!-- CAMERA RIG: standard A-Frame rig pattern -->
+  <a-entity id="player" position="0 1.6 3.2" wasd-controls="acceleration: 20">
+    <a-camera id="cam" look-controls near="0.01">
+      <a-entity cursor="rayOrigin: mouse; fuse: false"
+                raycaster="objects: .clickable; far: 8"
+                id="cursor"></a-entity>
+    </a-camera>
+  </a-entity>
+
+  <!-- LIGHTS -->
+  <a-light id="ambient-light" type="ambient" color="#3a3f55" intensity="0.55"></a-light>
+  <a-light id="fill-light" type="directional" color="#6f7699" intensity="0.25" position="2 4 1"></a-light>
+  <a-light id="lamp-light" type="point" color="#e3a857" intensity="0" distance="6" position="1.6 1.35 -4.3"></a-light>
+
+  <!-- ROOM SHELL (10x10, walls at x,z = ±5) -->
+  <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#3c2f26"></a-plane>
+  <a-box position="0 4.05 0" width="10" height="0.1" depth="10" color="#22222c"></a-box>
+
+  <!-- North wall (behind desk/window) -->
+  <a-box position="0 2 -5" width="10" height="4" depth="0.5" color="#8a8f9e"></a-box>
+  <!-- West wall -->
+  <a-box position="-5 2 0" width="0.5" height="4" depth="10" color="#83889a"></a-box>
+  <!-- East wall -->
+  <a-box position="5 2 0" width="0.5" height="4" depth="10" color="#83889a"></a-box>
+  <!-- South wall, split around the door -->
+  <a-box position="-2.875 2 5" width="4.25" height="4" depth="0.5" color="#8a8f9e"></a-box>
+  <a-box position="2.875 2 5" width="4.25" height="4" depth="0.5" color="#8a8f9e"></a-box>
+  <!-- header above the door, closing the gap up to the ceiling -->
+  <a-box position="0 3.35 5" width="1.9" height="1.3" depth="0.5" color="#8a8f9e"></a-box>
+
+  <!-- DOOR -->
+  <a-entity id="door-group" position="0 1.35 4.7">
+    <a-box position="0 0 0" width="1.5" height="2.7" depth="0.12" color="#6b4a2f"></a-box>
+    <a-sphere position="0.55 0 0.1" radius="0.05" color="#d4af37"></a-sphere>
+    <a-box id="door-bolt" position="0 -1.5 0.1" width="0.5" height="0.15" depth="0.06" color="#555a6e"></a-box>
+  </a-entity>
+
+  <!-- ============ BED (northwest corner) ============ -->
+  <a-entity id="bed-group">
+    <a-box position="-3.6 0.3 -3.6" width="2.2" height="0.6" depth="2.6" color="#5b4130"></a-box>
+    <a-box position="-3.6 0.65 -3.6" width="2" height="0.3" depth="2.4" color="#eef0f5"></a-box>
+    <a-box class="clickable" id="pillow" data-label="Look under the pillow"
+           position="-3.6 0.85 -4.55" width="1.3" height="0.22" depth="0.6" color="#f7f5ee"></a-box>
+    <a-box class="clickable" id="underbed" data-label="Look under the bed"
+           position="-3.6 0.08 -3.6" width="2" height="0.16" depth="2.2" color="#241d1a" opacity="0.001"></a-box>
+  </a-entity>
+
+  <!-- Nightstand + clock -->
+  <a-box position="-2.15 0.4 -4.4" width="0.6" height="0.8" depth="0.6" color="#4a3626"></a-box>
+  <a-text id="clock-text" value="00:00" position="-2.15 0.86 -4.08" align="center" width="2.4" color="#e3a857"></a-text>
+  <a-box class="clickable" data-label="Nightstand clock" id="clock-hitbox"
+         position="-2.15 0.86 -4.08" width="0.5" height="0.2" depth="0.05" color="#000" opacity="0.001"></a-box>
+
+  <!-- ============ DESK (north wall) ============ -->
+  <a-entity id="desk-group">
+    <a-box position="1.8 0.75 -4.55" width="2.2" height="0.1" depth="0.9" color="#4a3626"></a-box>
+    <a-box position="1.1 0.37 -4.55" width="0.1" height="0.75" depth="0.85" color="#3a2c1f"></a-box>
+    <a-box position="2.5 0.37 -4.55" width="0.1" height="0.75" depth="0.85" color="#3a2c1f"></a-box>
+
+    <a-entity class="clickable" id="lamp" data-label="Toggle the lamp" position="1.6 0.85 -4.3">
+      <a-cylinder position="0 0 0" radius="0.06" height="0.35" color="#2a2a34"></a-cylinder>
+      <a-cone position="0 0.28 0" radius-bottom="0.16" radius-top="0.05" height="0.2" color="#e3a857"></a-cone>
     </a-entity>
 
-    <!-- FLOOR -->
-    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#8B4513"></a-plane>
+    <a-box class="clickable" id="journal" data-label="Read the journal"
+           position="2.2 0.83 -4.65" width="0.3" height="0.06" depth="0.4" color="#7a2f2f"></a-box>
 
-    <!-- SKY -->
-    <a-sky color="#CCEEFF"></a-sky>
+    <a-sphere class="clickable" id="globe" data-label="A small globe"
+              position="1.3 0.9 -4.65" radius="0.13" color="#3f6f6a"></a-sphere>
+  </a-entity>
 
-    <!-- FRONT WALL (split around the entrance doorway at x -0.75 to 0.75) -->
-    <a-box position="-5.375 3 -10" width="9.25" height="6" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 5 3"></a-box>
-    <a-box position="5.375 3 -10" width="9.25" height="6" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 5 3"></a-box>
+  <!-- ============ BOOKSHELF (east wall) ============ -->
+  <a-entity id="bookshelf-group" position="4.7 0 -1">
+    <a-box position="0 2 0" width="0.35" height="3.6" depth="4.6" color="#3a2c1f"></a-box>
+    <a-box position="-0.15 0.85 0" width="0.05" height="0.02" depth="4.6" color="#241d15"></a-box>
+    <a-box position="-0.15 1.6 0" width="0.05" height="0.02" depth="4.6" color="#241d15"></a-box>
+    <a-box position="-0.15 2.35 0" width="0.05" height="0.02" depth="4.6" color="#241d15"></a-box>
+    <a-box position="-0.15 3.1 0" width="0.05" height="0.02" depth="4.6" color="#241d15"></a-box>
+    <!-- 40 books are generated here at runtime by JS -->
+    <a-entity id="bookshelf-books"></a-entity>
+  </a-entity>
 
-    <!-- BACK WALL -->
-    <a-box position="0 3 10" width="20" height="6" depth="1"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
+  <!-- ============ CLOSET (west wall, south portion) ============ -->
+  <a-entity id="closet-group" position="-4.7 0 2.5">
+    <a-box position="0 1.5 0" width="0.35" height="3" depth="2.2" color="#3a2c1f"></a-box>
+    <a-plane class="clickable" id="mirror" data-label="Look at the mirror"
+             position="0.19 1.5 0" rotation="0 90 0" width="1.6" height="1.6" color="#8fa3b8" opacity="0.85"></a-plane>
+  </a-entity>
 
-    <!-- LEFT WALL -->
-    <a-box position="-10 3 0" width="1" height="6" depth="20"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
+  <!-- ============ WINDOW (north wall) ============ -->
+  <a-entity id="window-group" position="-1.8 2.2 -4.7">
+    <a-box position="0 0 0" width="2" height="2" depth="0.06" color="#4a3626"></a-box>
+    <a-plane class="clickable" id="window" data-label="Look at the window"
+             position="0 0 0.05" width="1.7" height="1.7" color="#b9d4e8" opacity="0.5" side="double"></a-plane>
+    <a-text id="window-text" value="" position="0 0 0.08" align="center" width="1.6" color="#e3a857" visible="false"></a-text>
+  </a-entity>
 
-    <!-- RIGHT WALL -->
-    <a-box position="10 3 0" width="1" height="6" depth="20"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 10 3"></a-box>
+</a-scene>
 
-    <!-- ROOF -->
-    <a-box position="0 6.1 0" width="20" height="0.5" depth="20" color="#444"></a-box>
+<!-- ============ UI OVERLAY ============ -->
+<div id="ui">
+  <div id="hud">
+    <div class="title">The Bedroom of Three Chances</div>
+    <div id="chances">
+      <span class="label">Chances remaining</span>
+      <span class="pips" id="pips"></span>
+    </div>
+  </div>
+  <div id="narrator-bar">
+    <div class="voice-mark"></div>
+    <div id="narrator-text">The lights flicker on.</div>
+  </div>
+</div>
 
-    <!-- BRICK HEADER (fills the gap above the door, up to the roof, with generous overlap
-         onto the side wall pieces so there's no sliver of sky visible) -->
-    <a-box position="0 4.3 -10" width="1.9" height="3.4" depth="1.02"
-           material="src: https://threejs.org/examples/textures/brick_diffuse.jpg; repeat: 1 2"></a-box>
+<div id="clue-log">
+  <div id="clue-log-header">
+    <span>Things you've noticed</span>
+    <button id="clue-log-toggle">–</button>
+  </div>
+  <ul id="clue-log-list"><li id="clue-log-empty">Nothing yet. Look around.</li></ul>
+</div>
 
-    <!-- ENTRANCE DOOR (flush with the wall's outer face at z=-9.5, fully covering the gap) -->
-    <a-box position="0 1.3 -9.575" width="1.9" height="2.6" depth="0.15"
-           material="src: https://threejs.org/examples/textures/hardwood2_diffuse.jpg; repeat: 1 2"></a-box>
-    <a-sphere position="0.7 1.3 -9.48" radius="0.06" color="#D4AF37" metalness="0.8" roughness="0.2"></a-sphere>
+<div id="crosshair"></div>
+<div id="hover-label"></div>
+<div id="move-hint">WASD to move · mouse to look · click to interact</div>
 
-    <!-- FRONT WINDOWS -->
-    <a-box position="-6 3.5 -9.55" width="1.8" height="1.8" depth="0.1" color="#88CCFF" opacity="0.5" side="double"></a-box>
-    <a-box position="-6 3.5 -9.6" width="2" height="2" depth="0.05" color="#5C3A21"></a-box>
-    <a-box position="6 3.5 -9.55" width="1.8" height="1.8" depth="0.1" color="#88CCFF" opacity="0.5" side="double"></a-box>
-    <a-box position="6 3.5 -9.6" width="2" height="2" depth="0.05" color="#5C3A21"></a-box>
+<div id="modal-overlay">
+  <div id="modal-box">
+    <button id="modal-close" aria-label="Close">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
 
-  </a-scene>
+<div id="ending-overlay">
+  <div id="ending-content">
+    <div class="eyebrow" id="ending-eyebrow">THE VOICE RETURNS</div>
+    <h1 id="ending-title">You escaped.</h1>
+    <p id="ending-line">You listened. You learned. You escaped.</p>
+    <button class="btn primary" id="restart-btn">Play again</button>
+  </div>
+</div>
 
-  <script>
-    const player = document.querySelector('#player');
+<script>
+(function(){
+  "use strict";
 
-    // Only custom keyboard behavior kept: Q/E move the player up/down.
-    document.addEventListener('keydown', (e) => {
-      if (e.key === "q" || e.key === "Q") player.object3D.position.y += 0.2;
-      if (e.key === "e" || e.key === "E") player.object3D.position.y -= 0.2;
-    });
+  /* ============================================================
+     GAME STATE
+     ============================================================ */
+  const state = {
+    chancesLeft: 3,
+    noteRead: false,
+    journalPage: 0,
+    journalFinished: false,
+    mirrorRead: false,
+    windowRead: false,
+    boxOpened: false,
+    lampOn: false,
+    lampHasFlickered: false,
+    gameOver: false,
+    won: false,
+    comboValue: [0,0,0]
+  };
 
-    // ---- SOLID EXTERIOR WALLS (circle vs. axis-aligned box collision) ----
-    // This runs every frame regardless of what moved the player (default
-    // wasd-controls, in this case) and simply pushes you back out if you
-    // end up inside a wall.
-    const wallBoxes = [
-      { xMin: -10.5, xMax: -0.75, zMin: -10.5, zMax: -9.5 }, // front-left of doorway
-      { xMin: 0.75, xMax: 10.5, zMin: -10.5, zMax: -9.5 },   // front-right of doorway
-      { xMin: -10, xMax: 10, zMin: 9.5, zMax: 10.5 },        // back
-      { xMin: -10.5, xMax: -9.5, zMin: -10, zMax: 10 },      // left
-      { xMin: 9.5, xMax: 10.5, zMin: -10, zMax: 10 },        // right
-    ];
+  const CORRECT_CODE = [1,3,5];
 
-    const PLAYER_RADIUS = 0.35;
-    const MAX_STEP = 0.2; // max distance the player can move in a single frame
+  const journalEntries = [
+    { title:"Entry I",   text:"The weight of a story is not in its pages. It is in what it costs you to put it down." },
+    { title:"Entry II",  text:"There is one book that changed everything for me. I have never told anyone which." },
+    { title:"Entry III", text:"I have always hidden the things that matter behind the obvious. A habit, I suppose, from a lifetime of being overlooked." },
+    { title:"Entry IV",  text:"Not the first, not the last, but the one that stands apart.", isPoem:true },
+    { title:"Entry V",   text:"A rough sketch fills the margin — the bookshelf, drawn from memory. One spine is shaded darker than the rest.",
+      sketch:"The smudged title beneath it reads: \u201cThe Silent Volume.\u201d" }
+  ];
 
-    // Floor sits at y=0, roof's underside sits at y=5.85 (roof box is 0.5 tall,
-    // centered at y=6.1). Keep the camera's eye position between the two,
-    // with a little headroom so you don't clip into either.
-    const FLOOR_Y = 0.15;
-    const ROOF_Y = 5.7;
+  const trapBooks = [
+    { title:"Mountains of Memory", symbol:"▲" },
+    { title:"The Endless Circle",  symbol:"●" },
+    { title:"Square Logic",        symbol:"■" }
+  ];
+  const correctBook = { title:"The Silent Volume" };
+  const normalTitles = [
+    "A History of Quiet Rooms","The Cartographer's Doubt","Letters to No One",
+    "Midnight Arithmetic","The Weight of Water","Ordinary Ghosts",
+    "The Clockmaker's Apprentice","Salt and Other Absences","The Grammar of Shadows",
+    "Everything I Forgot to Say","The Paper Lighthouse","Small Gods of the Hallway",
+    "The Locksmith's Daughter","A Field Guide to Silence","The Uninvited Season",
+    "Notes from the Wrong Room","The Long Way Home","Dust and Other Company",
+    "The Architecture of Sleep","Whatever the Mirror Keeps","The Almanac of Small Regrets",
+    "A Room Without Corners","The Patient Clock","Songs for Empty Houses",
+    "The Cartography of Doors","What the Curtains Heard","A Short History of Waiting",
+    "The Last Ordinary Day","Letters Never Folded","The Quiet Between Floors",
+    "An Incomplete Atlas","The Furniture of Dreams","Everything Behind the Wallpaper",
+    "The Hour That Repeats","A Catalogue of Locked Doors","The Bookshelf's Confession"
+  ];
+  const normalFlavorLines = [
+    "Just an ordinary book. Nothing about it feels important.",
+    "The spine creaks when you open it. Nothing hidden inside.",
+    "A perfectly unremarkable read. You put it back.",
+    "It smells like an old library. That's all.",
+    "Nothing about this one calls to you.",
+    "A book like any other on the shelf."
+  ];
 
-    // Track the last known-good position so we can cap how far we move
-    // in one frame — this stops fast movement from "jumping over" a wall
-    // before the collision check ever sees it.
-    let prevX = player.object3D.position.x;
-    let prevZ = player.object3D.position.z;
+  /* ============================================================
+     DOM REFS
+     ============================================================ */
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-    function collisionLoop() {
-      const pos = player.object3D.position;
+  const narratorText = $("#narrator-text");
+  const pipsEl = $("#pips");
+  const clueListEl = $("#clue-log-list");
+  const clueLogEl = $("#clue-log");
+  const clockText = $("#clock-text");
+  const crosshair = $("#crosshair");
+  const hoverLabel = $("#hover-label");
 
-      // Cap the distance moved this frame so we can never tunnel through a wall
-      let deltaX = pos.x - prevX;
-      let deltaZ = pos.z - prevZ;
-      const stepDist = Math.hypot(deltaX, deltaZ);
-      if (stepDist > MAX_STEP) {
-        const scale = MAX_STEP / stepDist;
-        deltaX *= scale;
-        deltaZ *= scale;
-      }
+  const modalOverlay = $("#modal-overlay");
+  const modalBox = $("#modal-box");
+  const modalContent = $("#modal-content");
+  const modalClose = $("#modal-close");
 
-      let newX = prevX + deltaX;
-      let newZ = prevZ + deltaZ;
+  const endingOverlay = $("#ending-overlay");
+  const endingEyebrow = $("#ending-eyebrow");
+  const endingTitle = $("#ending-title");
+  const endingLine = $("#ending-line");
+  const restartBtn = $("#restart-btn");
 
-      for (const w of wallBoxes) {
-        const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
-        const closestZ = Math.max(w.zMin, Math.min(newZ, w.zMax));
-        const dx = newX - closestX;
-        const dz = newZ - closestZ;
-        const distSq = dx * dx + dz * dz;
+  const ambientLight = $("#ambient-light");
+  const lampLight = $("#lamp-light");
+  const lampEntity = $("#lamp");
+  const windowTextEl = $("#window-text");
+  const windowPlane = $("#window");
+  const doorGroup = $("#door-group");
+  const doorBolt = $("#door-bolt");
+  const bookshelfGroup = $("#bookshelf-group");
 
-        if (distSq < PLAYER_RADIUS * PLAYER_RADIUS) {
-          const dist = Math.sqrt(distSq) || 0.0001;
-          const overlap = PLAYER_RADIUS - dist;
-          newX += (dx / dist) * overlap;
-          newZ += (dz / dist) * overlap;
+  /* ============================================================
+     NARRATOR
+     ============================================================ */
+  let narratorTimer = null;
+  function say(text, opts){
+    opts = opts || {};
+    clearTimeout(narratorTimer);
+    narratorText.style.opacity = 0;
+    narratorText.style.transition = "opacity 200ms ease";
+    setTimeout(function(){
+      narratorText.textContent = text;
+      narratorText.style.opacity = 1;
+    }, 120);
+    if (opts.after){
+      narratorTimer = setTimeout(opts.after, opts.afterDelay || Math.max(1400, text.length * 45));
+    }
+  }
+
+  /* ============================================================
+     CLUE LOG
+     ============================================================ */
+  const loggedClues = new Set();
+  function logClue(text){
+    if (loggedClues.has(text)) return;
+    loggedClues.add(text);
+    const empty = $("#clue-log-empty");
+    if (empty) empty.remove();
+    const li = document.createElement("li");
+    li.textContent = text;
+    clueListEl.appendChild(li);
+  }
+  $("#clue-log-toggle").addEventListener("click", function(){
+    clueLogEl.classList.toggle("collapsed");
+    this.textContent = clueLogEl.classList.contains("collapsed") ? "+" : "–";
+  });
+
+  function renderPips(){
+    pipsEl.innerHTML = "";
+    for (let i=0; i<3; i++){
+      const span = document.createElement("span");
+      span.className = "pip" + (i >= state.chancesLeft ? " spent" : "");
+      pipsEl.appendChild(span);
+    }
+  }
+
+  /* ============================================================
+     MODAL HELPERS
+     ============================================================ */
+  function openModal(html, opts){
+    opts = opts || {};
+    modalContent.innerHTML = html;
+    modalBox.classList.toggle("wide", !!opts.wide);
+    modalOverlay.classList.add("visible");
+    document.exitPointerLock && document.exitPointerLock();
+  }
+  function closeModal(){
+    modalOverlay.classList.remove("visible");
+  }
+  modalClose.addEventListener("click", closeModal);
+  modalOverlay.addEventListener("click", function(e){ if (e.target === modalOverlay) closeModal(); });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && modalOverlay.classList.contains("visible")) closeModal();
+  });
+
+  /* ============================================================
+     LAMP
+     ============================================================ */
+  function toggleLamp(){
+    state.lampOn = !state.lampOn;
+    lampLight.setAttribute("intensity", state.lampOn ? 1.1 : 0);
+    ambientLight.setAttribute("color", state.lampOn ? "#4a4460" : "#3a3f55");
+    say(state.lampOn
+      ? "The lamp clicks on, warm light spilling across the desk."
+      : "The lamp clicks off. The room settles back into shadow.");
+  }
+
+  function maybeFlickerLamp(){
+    if (state.lampHasFlickered) return;
+    if (state.mirrorRead && state.journalFinished){
+      state.lampHasFlickered = true;
+      let ticks = 0;
+      const flick = setInterval(function(){
+        ticks++;
+        lampLight.setAttribute("intensity", (ticks % 2 === 0) ? (state.lampOn ? 1.1 : 0.4) : 0.05);
+        if (ticks >= 6){
+          clearInterval(flick);
+          lampLight.setAttribute("intensity", state.lampOn ? 1.1 : 0);
         }
+      }, 110);
+    }
+  }
+
+  /* ============================================================
+     BED
+     ============================================================ */
+  function openNote(){
+    state.noteRead = true;
+    logClue("A folded note was hiding under the pillow.");
+    logClue("Three symbols on the note: ▲ ● ■");
+    openModal(
+      '<p class="modal-eyebrow">Found under the pillow</p>' +
+      '<h2 class="modal-title">A folded note</h2>' +
+      '<div class="paper">' +
+        '<p>The truth hides between lines.</p>' +
+        '<p>The wrong choice echoes three times.</p>' +
+        '<div class="symbols">▲ &nbsp; ● &nbsp; ■</div>' +
+      '</div>' +
+      '<div class="modal-actions"><button class="btn primary" id="btn-note-close">Fold it away</button></div>'
+    );
+    $("#btn-note-close").addEventListener("click", closeModal);
+  }
+
+  function openBoxIntro(){
+    if (state.boxOpened){
+      openModal(
+        '<p class="modal-eyebrow">Under the bed</p>' +
+        '<h2 class="modal-title">The wooden box</h2>' +
+        '<div class="modal-body"><p>The box sits open, empty now except for the metal tag inside.</p></div>' +
+        '<div class="tag-reveal visible">FINAL WARNING: THREE CHANCES.</div>' +
+        '<div class="modal-actions"><button class="btn primary" id="btn-box-close">Close</button></div>'
+      );
+      $("#btn-box-close").addEventListener("click", closeModal);
+      return;
+    }
+    openModal(
+      '<p class="modal-eyebrow">Under the bed</p>' +
+      '<h2 class="modal-title">A locked wooden box</h2>' +
+      '<div class="modal-body"><p>A small wooden box, bound shut with a three-digit combination lock.</p></div>' +
+      '<div class="combo-wrap" id="combo-wrap">' + buildDial(0) + buildDial(1) + buildDial(2) + '</div>' +
+      '<div class="tag-reveal" id="tag-reveal">FINAL WARNING: THREE CHANCES.</div>' +
+      '<div class="modal-actions"><button class="btn primary" id="btn-combo-open">Open the lock</button></div>'
+    );
+    attachComboHandlers();
+  }
+
+  function buildDial(index){
+    return '<div class="combo-dial" data-index="'+index+'">' +
+      '<button class="dial-up">▲</button><div class="combo-digit">0</div><button class="dial-down">▼</button>' +
+    '</div>';
+  }
+
+  function attachComboHandlers(){
+    state.comboValue = [0,0,0];
+    $$(".combo-dial").forEach(function(dial){
+      const idx = parseInt(dial.dataset.index, 10);
+      const digitEl = dial.querySelector(".combo-digit");
+      dial.querySelector(".dial-up").addEventListener("click", function(){
+        state.comboValue[idx] = (state.comboValue[idx] + 1) % 10;
+        digitEl.textContent = state.comboValue[idx];
+      });
+      dial.querySelector(".dial-down").addEventListener("click", function(){
+        state.comboValue[idx] = (state.comboValue[idx] + 9) % 10;
+        digitEl.textContent = state.comboValue[idx];
+      });
+    });
+    $("#btn-combo-open").addEventListener("click", function(){
+      const matches = state.comboValue.every(function(v,i){ return v === CORRECT_CODE[i]; });
+      if (matches){
+        state.boxOpened = true;
+        logClue("Opened the box: the code was 1-3-5.");
+        $("#tag-reveal").classList.add("visible");
+        say("Something inside clicks open.");
+        this.disabled = true;
+        this.textContent = "Opened";
+      } else {
+        const wrap = $("#combo-wrap");
+        wrap.classList.remove("shake");
+        void wrap.offsetWidth;
+        wrap.classList.add("shake");
+        say("The lock resists. Not this combination.");
       }
+    });
+  }
 
-      pos.x = newX;
-      pos.z = newZ;
-      prevX = newX;
-      prevZ = newZ;
+  /* ============================================================
+     JOURNAL
+     ============================================================ */
+  function renderJournalPage(){
+    const entry = journalEntries[state.journalPage];
+    const isLast = state.journalPage === journalEntries.length - 1;
+    let sketchHtml = entry.sketch ? '<div class="journal-sketch">' + entry.sketch + '</div>' : "";
+    openModal(
+      '<p class="modal-eyebrow">The desk</p>' +
+      '<h2 class="modal-title">Journal &mdash; ' + entry.title + '</h2>' +
+      '<div class="paper">' +
+        '<p' + (entry.isPoem ? ' style="font-style:italic;text-align:center;"' : '') + '>' + entry.text + '</p>' +
+        sketchHtml +
+        '<div class="journal-nav">' +
+          '<button class="btn" id="btn-journal-prev" ' + (state.journalPage === 0 ? "disabled" : "") + '>\u2190 Previous</button>' +
+          '<span class="page-count">' + (state.journalPage+1) + ' / ' + journalEntries.length + '</span>' +
+          '<button class="btn" id="btn-journal-next" ' + (isLast ? "disabled" : "") + '>Next \u2192</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-actions"><button class="btn primary" id="btn-journal-close">Close journal</button></div>'
+    );
+    $("#btn-journal-close").addEventListener("click", closeModal);
+    const prevBtn = $("#btn-journal-prev");
+    const nextBtn = $("#btn-journal-next");
+    if (prevBtn) prevBtn.addEventListener("click", function(){
+      state.journalPage = Math.max(0, state.journalPage - 1);
+      renderJournalPage();
+    });
+    if (nextBtn) nextBtn.addEventListener("click", function(){
+      state.journalPage = Math.min(journalEntries.length - 1, state.journalPage + 1);
+      if (state.journalPage === journalEntries.length - 1){
+        state.journalFinished = true;
+        logClue("The journal's last entry hints at \u201cThe Silent Volume.\u201d");
+        maybeFlickerLamp();
+      }
+      renderJournalPage();
+    });
+  }
 
-      // Floor and roof collision (blocks Q/E flying through either)
-      if (pos.y < FLOOR_Y) pos.y = FLOOR_Y;
-      if (pos.y > ROOF_Y) pos.y = ROOF_Y;
+  function openGlobe(){
+    say("A dusty globe, spinning slightly off its axis. Nothing about it seems relevant — but you notice it anyway.");
+  }
 
-      requestAnimationFrame(collisionLoop);
+  /* ============================================================
+     MIRROR
+     ============================================================ */
+  let mirrorFlipped = true;
+  function renderMirror(){
+    openModal(
+      '<p class="modal-eyebrow">The closet mirror</p>' +
+      '<h2 class="modal-title">Written across the glass</h2>' +
+      '<div class="mirror-text' + (mirrorFlipped ? " flipped" : "") + '">Pull not by color, but by weight.</div>' +
+      '<div class="modal-actions">' +
+        '<button class="btn" id="btn-mirror-flip">' + (mirrorFlipped ? "Read it properly" : "Show it backward") + '</button>' +
+        '<button class="btn primary" id="btn-mirror-close">Close</button>' +
+      '</div>'
+    );
+    $("#btn-mirror-flip").addEventListener("click", function(){
+      mirrorFlipped = !mirrorFlipped;
+      if (!mirrorFlipped && !state.mirrorRead){
+        state.mirrorRead = true;
+        logClue("The mirror: \u201cPull not by color, but by weight.\u201d");
+        maybeFlickerLamp();
+      }
+      renderMirror();
+    });
+    $("#btn-mirror-close").addEventListener("click", closeModal);
+  }
+
+  /* ============================================================
+     WINDOW
+     ============================================================ */
+  function openWindow(){
+    if (state.lampOn){
+      if (!state.windowRead){
+        state.windowRead = true;
+        logClue("Lamp light on the window revealed: \u201cTHE QUIET ONE SPEAKS.\u201d");
+      }
+      windowTextEl.setAttribute("value", "THE QUIET\nONE SPEAKS.");
+      windowTextEl.setAttribute("visible", true);
+      openModal(
+        '<p class="modal-eyebrow">The window</p>' +
+        '<h2 class="modal-title">Frosted glass, lit from behind</h2>' +
+        '<div class="glass revealed">THE QUIET ONE SPEAKS.</div>' +
+        '<div class="modal-actions"><button class="btn primary" id="btn-window-close">Step back</button></div>'
+      );
+    } else {
+      windowTextEl.setAttribute("visible", false);
+      openModal(
+        '<p class="modal-eyebrow">The window</p>' +
+        '<h2 class="modal-title">Frosted glass</h2>' +
+        '<div class="glass">The glass is frosted white. Maybe more light would help.</div>' +
+        '<div class="modal-actions"><button class="btn primary" id="btn-window-close">Step back</button></div>'
+      );
+    }
+    $("#btn-window-close").addEventListener("click", closeModal);
+  }
+
+  /* ============================================================
+     CLOCK
+     ============================================================ */
+  function openClock(){
+    say(state.gameOver ? "The clock no longer means anything." : "00:00. It hasn't moved since you woke up.");
+  }
+
+  /* ============================================================
+     BOOKSHELF (real 3D books, generated at runtime)
+     ============================================================ */
+  const booksContainer = $("#bookshelf-books");
+  let shelfOrder = [];
+
+  function shuffledBooks(){
+    const list = [];
+    trapBooks.forEach(function(b){ list.push({ title:b.title, type:"trap", symbol:b.symbol, weight:"heavy" }); });
+    list.push({ title:correctBook.title, type:"correct", weight:"light" });
+    normalTitles.forEach(function(t){ list.push({ title:t, type:"normal", weight:"normal" }); });
+    for (let i = list.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+    }
+    return list;
+  }
+
+  const SHELF_ROWS = [0.55, 1.3, 2.05, 2.8];   // y offsets, 4 rows
+  const BOOKS_PER_ROW = 10;                     // 4 x 10 = 40
+
+  function buildBookshelf(){
+    booksContainer.innerHTML = "";
+    shelfOrder = shuffledBooks();
+
+    const bookColors = ["#7a2f2f","#2f4f4f","#4a3f6b","#3d5a3d","#6b4a2f","#4f4a3d","#2f4f6b","#5a2f4f"];
+
+    shelfOrder.forEach(function(book, i){
+      const row = Math.floor(i / BOOKS_PER_ROW);
+      const col = i % BOOKS_PER_ROW;
+      const zStart = -2.15;
+      const spacing = 4.3 / BOOKS_PER_ROW;
+      const thickness = book.weight === "light" ? 0.12 : book.weight === "heavy" ? 0.26 : 0.18;
+      const height = 0.55 + (i % 3) * 0.05;
+
+      const book3D = document.createElement("a-box");
+      book3D.setAttribute("class", "clickable book-entity");
+      book3D.setAttribute("data-index", i);
+      book3D.setAttribute("data-label", book.title);
+      book3D.setAttribute("width", thickness);
+      book3D.setAttribute("height", height);
+      book3D.setAttribute("depth", 0.32);
+      book3D.setAttribute("color", bookColors[i % bookColors.length]);
+      book3D.setAttribute("position",
+        (-0.02) + " " + (SHELF_ROWS[row] + height/2) + " " + (zStart + col * spacing));
+
+      booksContainer.appendChild(book3D);
+    });
+  }
+
+  function handleBookPull(book){
+    if (state.gameOver) return;
+
+    if (book.type === "correct"){
+      closeModal();
+      triggerWin();
+      return;
+    }
+    if (book.type === "trap"){
+      state.chancesLeft -= 1;
+      renderPips();
+      flashDanger();
+      if (state.chancesLeft <= 0){
+        triggerLose();
+      } else {
+        say("Incorrect. You have " + state.chancesLeft + " chance" + (state.chancesLeft === 1 ? "" : "s") + " remaining.");
+      }
+      return;
+    }
+    say(normalFlavorLines[Math.floor(Math.random() * normalFlavorLines.length)]);
+  }
+
+  function flashDanger(){
+    bookshelfGroup.setAttribute("animation__shake",
+      "property: rotation; from: 0 0 0; to: 0 3 0; dur: 90; dir: alternate; loop: 4; easing: linear");
+    ambientLight.setAttribute("color", "#8a3a3a");
+    setTimeout(function(){
+      ambientLight.setAttribute("color", state.lampOn ? "#4a4460" : "#3a3f55");
+      bookshelfGroup.removeAttribute("animation__shake");
+    }, 500);
+  }
+
+  /* ============================================================
+     ENDINGS
+     ============================================================ */
+  function triggerWin(){
+    state.gameOver = true;
+    state.won = true;
+
+    bookshelfGroup.setAttribute("animation__shake",
+      "property: rotation; from: 0 0 0; to: 0 2 0; dur: 100; dir: alternate; loop: 6; easing: linear");
+    say("The bookshelf shakes. A soft click echoes through the room.");
+
+    setTimeout(function(){
+      clockText.setAttribute("value", "03:00");
+      doorGroup.setAttribute("animation__open",
+        "property: position; to: -1.3 1.35 4.7; dur: 1400; easing: easeInOutQuad");
+      lampLight.setAttribute("intensity", 1.4);
+      ambientLight.setAttribute("intensity", 0.9);
+      ambientLight.setAttribute("color", "#e3c48a");
+    }, 1200);
+
+    setTimeout(function(){ say("You listened. You learned. You escaped."); }, 2400);
+
+    setTimeout(function(){
+      showEnding({ cls:"win", eyebrow:"THE VOICE RETURNS", title:"You escaped.",
+        line:"You listened. You learned. You escaped." });
+    }, 4400);
+  }
+
+  function triggerLose(){
+    state.gameOver = true;
+    state.won = false;
+
+    bookshelfGroup.setAttribute("animation__lock",
+      "property: rotation; from: 0 0 0; to: 0 1 0; dur: 120; dir: alternate; loop: 3; easing: linear");
+    say("The room seals. \u201cYour choices are exhausted.\u201d");
+
+    setTimeout(function(){
+      doorBolt.setAttribute("color", "#e2504f");
+      clockText.setAttribute("value", "LOCKED");
+      clockText.setAttribute("color", "#e2504f");
+      ambientLight.setAttribute("color", "#6b1f1f");
+      ambientLight.setAttribute("intensity", 0.35);
+      lampLight.setAttribute("intensity", state.lampOn ? 0.3 : 0);
+    }, 1000);
+
+    setTimeout(function(){ say("The room keeps what it claims."); }, 2200);
+
+    setTimeout(function(){
+      showEnding({ cls:"lose", eyebrow:"THE VOICE, ONE LAST TIME", title:"The room keeps what it claims.",
+        line:"You had three chances. The door does not open." });
+    }, 4000);
+  }
+
+  function showEnding(cfg){
+    endingOverlay.classList.remove("win","lose");
+    endingOverlay.classList.add(cfg.cls, "visible");
+    endingEyebrow.textContent = cfg.eyebrow;
+    endingTitle.textContent = cfg.title;
+    endingLine.textContent = cfg.line;
+    document.exitPointerLock && document.exitPointerLock();
+  }
+
+  restartBtn.addEventListener("click", resetGame);
+
+  function resetGame(){
+    state.chancesLeft = 3;
+    state.noteRead = false;
+    state.journalPage = 0;
+    state.journalFinished = false;
+    state.mirrorRead = false;
+    state.windowRead = false;
+    state.boxOpened = false;
+    state.lampOn = false;
+    state.lampHasFlickered = false;
+    state.gameOver = false;
+    state.won = false;
+    state.comboValue = [0,0,0];
+
+    loggedClues.clear();
+    clueListEl.innerHTML = '<li id="clue-log-empty">Nothing yet. Look around.</li>';
+
+    buildBookshelf();
+
+    doorGroup.removeAttribute("animation__open");
+    doorGroup.setAttribute("position", "0 1.35 4.7");
+    doorBolt.setAttribute("color", "#555a6e");
+    clockText.setAttribute("value", "00:00");
+    clockText.setAttribute("color", "#e3a857");
+    lampLight.setAttribute("intensity", 0);
+    ambientLight.setAttribute("intensity", 0.55);
+    ambientLight.setAttribute("color", "#3a3f55");
+    windowTextEl.setAttribute("visible", false);
+
+    renderPips();
+    endingOverlay.classList.remove("visible","win","lose");
+    closeModal();
+
+    const player = $("#player");
+    player.object3D.position.set(0, 1.6, 3.2);
+
+    say("The lights flicker on.", {
+      after: function(){
+        say("\u201cWelcome. Your exit is hidden in plain sight. You have three chances. Choose wisely\u2026 or stay forever.\u201d");
+      },
+      afterDelay: 1800
+    });
+  }
+
+  /* ============================================================
+     3D CLICK / HOVER WIRING
+     ============================================================ */
+  const cursorEl = $("#cursor");
+
+  cursorEl.addEventListener("mouseenter", function(evt){
+    const target = evt.detail.intersectedEl;
+    if (!target) return;
+    crosshair.classList.add("hover");
+    const label = target.getAttribute("data-label");
+    if (label){
+      hoverLabel.textContent = label;
+      hoverLabel.classList.add("visible");
+    }
+  });
+
+  cursorEl.addEventListener("mouseleave", function(){
+    crosshair.classList.remove("hover");
+    hoverLabel.classList.remove("visible");
+  });
+
+  cursorEl.addEventListener("click", function(evt){
+    const target = evt.detail.intersectedEl;
+    if (!target || state.gameOver) {
+      if (target && state.gameOver) { /* ignore clicks after game over except restart button */ }
+      return;
     }
 
+    if (target.id === "pillow") return openNote();
+    if (target.id === "underbed") return openBoxIntro();
+    if (target.id === "journal") return renderJournalPage();
+    if (target.id === "globe") return openGlobe();
+    if (target.id === "lamp" || target.closest && target.closest("#lamp")) return toggleLamp();
+    if (target.id === "mirror") return renderMirror();
+    if (target.id === "window") return openWindow();
+    if (target.id === "clock-hitbox") return openClock();
+
+    if (target.classList.contains("book-entity")){
+      const idx = parseInt(target.getAttribute("data-index"), 10);
+      const book = shelfOrder[idx];
+      if (book) handleBookPull(book);
+    }
+  });
+
+  // lamp is a parent entity of a cone/cylinder — clicks land on the children,
+  // so also listen for clicks on those directly via event bubbling through A-Frame.
+  $("#lamp").addEventListener("click", toggleLamp);
+
+  /* ============================================================
+     COLLISION: solid walls + solid furniture
+     ============================================================ */
+  const player = $("#player");
+
+  const wallBoxes = [
+    { xMin:-5.5, xMax:-0.75, zMin:4.5, zMax:5.5 },   // south wall, left of door
+    { xMin:0.75, xMax:5.5, zMin:4.5, zMax:5.5 },     // south wall, right of door
+    { xMin:-5, xMax:5, zMin:-5.5, zMax:-4.5 },       // north wall
+    { xMin:-5.5, xMax:-4.5, zMin:-5, zMax:5 },       // west wall
+    { xMin:4.5, xMax:5.5, zMin:-5, zMax:5 },         // east wall
+
+    { xMin:-4.85, xMax:-2.35, zMin:-4.95, zMax:-2.25 }, // bed
+    { xMin:0.55, xMax:3.05, zMin:-4.95, zMax:-4.05 },   // desk
+    { xMin:4.35, xMax:5.0, zMin:-3.4, zMax:1.4 },       // bookshelf
+    { xMin:-4.95, xMax:-4.35, zMin:1.3, zMax:3.7 }      // closet
+  ];
+
+  const PLAYER_RADIUS = 0.3;
+  const MAX_STEP = 0.2;
+  let prevX = player.object3D.position.x;
+  let prevZ = player.object3D.position.z;
+
+  function collisionLoop(){
+    const pos = player.object3D.position;
+
+    let deltaX = pos.x - prevX;
+    let deltaZ = pos.z - prevZ;
+    const stepDist = Math.hypot(deltaX, deltaZ);
+    if (stepDist > MAX_STEP){
+      const scale = MAX_STEP / stepDist;
+      deltaX *= scale;
+      deltaZ *= scale;
+    }
+
+    let newX = prevX + deltaX;
+    let newZ = prevZ + deltaZ;
+
+    for (const w of wallBoxes){
+      const closestX = Math.max(w.xMin, Math.min(newX, w.xMax));
+      const closestZ = Math.max(w.zMin, Math.min(newZ, w.zMax));
+      const dx = newX - closestX;
+      const dz = newZ - closestZ;
+      const distSq = dx*dx + dz*dz;
+      if (distSq < PLAYER_RADIUS * PLAYER_RADIUS){
+        const dist = Math.sqrt(distSq) || 0.0001;
+        const overlap = PLAYER_RADIUS - dist;
+        newX += (dx/dist) * overlap;
+        newZ += (dz/dist) * overlap;
+      }
+    }
+
+    pos.x = newX;
+    pos.z = newZ;
+    prevX = newX;
+    prevZ = newZ;
+
     requestAnimationFrame(collisionLoop);
-  </script>
+  }
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  function init(){
+    renderPips();
+    buildBookshelf();
+    requestAnimationFrame(collisionLoop);
+
+    say("The lights flicker on.", {
+      after: function(){
+        say("\u201cWelcome. Your exit is hidden in plain sight. You have three chances. Choose wisely\u2026 or stay forever.\u201d");
+      },
+      afterDelay: 1800
+    });
+  }
+
+  const sceneEl = document.querySelector("a-scene");
+  if (sceneEl.hasLoaded){
+    init();
+  } else {
+    sceneEl.addEventListener("loaded", init);
+  }
+
+})();
+</script>
 
 </body>
 </html>
